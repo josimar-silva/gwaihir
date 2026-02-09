@@ -120,9 +120,9 @@ func TestHandler_Response_Types(t *testing.T) {
 		t.Errorf("Expected SuccessResponse.Message to be 'test', got %s", successResp.Message)
 	}
 
-	errorResp := ErrorResponse{Error: "error"}
-	if errorResp.Error != "error" {
-		t.Errorf("Expected ErrorResponse.Error to be 'error', got %s", errorResp.Error)
+	errorResp := ErrorResponse{Error: testResponseError}
+	if errorResp.Error != testResponseError {
+		t.Errorf("Expected ErrorResponse.Error to be '%s', got %s", testResponseError, errorResp.Error)
 	}
 
 	versionResp := VersionResponse{
@@ -135,7 +135,11 @@ func TestHandler_Response_Types(t *testing.T) {
 	}
 }
 
-const testMachineSaruman = "saruman"
+const (
+	testMachineSaruman  = "saruman"
+	testResponseError   = "error"
+	testResponseHealthy = "healthy"
+)
 
 func TestHandler_WakeRequest(t *testing.T) {
 	req := WakeRequest{MachineID: testMachineSaruman}
@@ -395,8 +399,8 @@ func TestHTTP_Health(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to parse response: %v", err)
 	}
-	if resp["status"] != "healthy" {
-		t.Errorf("Expected status 'healthy', got %v", resp["status"])
+	if resp["status"] != testResponseHealthy {
+		t.Errorf("Expected status '%s', got %v", testResponseHealthy, resp["status"])
 	}
 }
 
