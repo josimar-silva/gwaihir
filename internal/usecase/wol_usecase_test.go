@@ -4,7 +4,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/josimar-silva/gwaihir/internal/domain"
+	"github.com/josimar-silva/gwaihir/internal/infrastructure"
 )
 
 // Mock implementations for testing
@@ -91,7 +94,9 @@ func TestSendWakePacket_Success(t *testing.T) {
 	}
 	repo := newMockMachineRepository(machines)
 	sender := newMockWoLPacketSender()
-	useCase := NewWoLUseCase(repo, sender)
+	logger := newTestLogger()
+	metrics := newTestMetrics()
+	useCase := NewWoLUseCase(repo, sender, logger, metrics)
 
 	// Act
 	err := useCase.SendWakePacket("saruman")
@@ -118,7 +123,9 @@ func TestSendWakePacket_MachineNotFound(t *testing.T) {
 	// Arrange
 	repo := newMockMachineRepository(map[string]*domain.Machine{})
 	sender := newMockWoLPacketSender()
-	useCase := NewWoLUseCase(repo, sender)
+	logger := newTestLogger()
+	metrics := newTestMetrics()
+	useCase := NewWoLUseCase(repo, sender, logger, metrics)
 
 	// Act
 	err := useCase.SendWakePacket("nonexistent")
@@ -149,8 +156,10 @@ func TestSendWakePacket_SendError(t *testing.T) {
 	sender := newMockWoLPacketSender()
 	sender.sendError = errors.New("network error")
 	sender.sendErrorCount = 1
+	logger := newTestLogger()
+	metrics := newTestMetrics()
 
-	useCase := NewWoLUseCase(repo, sender)
+	useCase := NewWoLUseCase(repo, sender, logger, metrics)
 
 	// Act
 	err := useCase.SendWakePacket("saruman")
@@ -182,7 +191,9 @@ func TestSendWakePacket_MultipleMachines(t *testing.T) {
 	}
 	repo := newMockMachineRepository(machines)
 	sender := newMockWoLPacketSender()
-	useCase := NewWoLUseCase(repo, sender)
+	logger := newTestLogger()
+	metrics := newTestMetrics()
+	useCase := NewWoLUseCase(repo, sender, logger, metrics)
 
 	// Act
 	err1 := useCase.SendWakePacket("saruman")
@@ -219,7 +230,9 @@ func TestListMachines_Success(t *testing.T) {
 	}
 	repo := newMockMachineRepository(machines)
 	sender := newMockWoLPacketSender()
-	useCase := NewWoLUseCase(repo, sender)
+	logger := newTestLogger()
+	metrics := newTestMetrics()
+	useCase := NewWoLUseCase(repo, sender, logger, metrics)
 
 	// Act
 	result, err := useCase.ListMachines()
@@ -238,7 +251,9 @@ func TestListMachines_Error(t *testing.T) {
 	repo := newMockMachineRepository(nil)
 	repo.getAllError = errors.New("database error")
 	sender := newMockWoLPacketSender()
-	useCase := NewWoLUseCase(repo, sender)
+	logger := newTestLogger()
+	metrics := newTestMetrics()
+	useCase := NewWoLUseCase(repo, sender, logger, metrics)
 
 	// Act
 	result, err := useCase.ListMachines()
@@ -256,7 +271,9 @@ func TestListMachines_Empty(t *testing.T) {
 	// Arrange
 	repo := newMockMachineRepository(map[string]*domain.Machine{})
 	sender := newMockWoLPacketSender()
-	useCase := NewWoLUseCase(repo, sender)
+	logger := newTestLogger()
+	metrics := newTestMetrics()
+	useCase := NewWoLUseCase(repo, sender, logger, metrics)
 
 	// Act
 	result, err := useCase.ListMachines()
@@ -282,7 +299,9 @@ func TestGetMachine_Success(t *testing.T) {
 	}
 	repo := newMockMachineRepository(machines)
 	sender := newMockWoLPacketSender()
-	useCase := NewWoLUseCase(repo, sender)
+	logger := newTestLogger()
+	metrics := newTestMetrics()
+	useCase := NewWoLUseCase(repo, sender, logger, metrics)
 
 	// Act
 	machine, err := useCase.GetMachine("saruman")
@@ -306,7 +325,9 @@ func TestGetMachine_NotFound(t *testing.T) {
 	// Arrange
 	repo := newMockMachineRepository(map[string]*domain.Machine{})
 	sender := newMockWoLPacketSender()
-	useCase := NewWoLUseCase(repo, sender)
+	logger := newTestLogger()
+	metrics := newTestMetrics()
+	useCase := NewWoLUseCase(repo, sender, logger, metrics)
 
 	// Act
 	machine, err := useCase.GetMachine("nonexistent")
@@ -326,8 +347,10 @@ func TestGetMachine_NotFound(t *testing.T) {
 func TestNewWoLUseCase(t *testing.T) {
 	repo := newMockMachineRepository(nil)
 	sender := newMockWoLPacketSender()
+	logger := newTestLogger()
+	metrics := newTestMetrics()
 
-	useCase := NewWoLUseCase(repo, sender)
+	useCase := NewWoLUseCase(repo, sender, logger, metrics)
 
 	if useCase == nil {
 		t.Fatal("Expected non-nil usecase")
@@ -338,9 +361,15 @@ func TestNewWoLUseCase(t *testing.T) {
 	if useCase.packetSender != sender {
 		t.Error("Expected packetSender to be set")
 	}
+	if useCase.logger != logger {
+		t.Error("Expected logger to be set")
+	}
+	if useCase.metrics != metrics {
+		t.Error("Expected metrics to be set")
+	}
 }
 
-// Helper function
+// Helper functions
 func contains(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {
@@ -348,4 +377,14 @@ func contains(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+func newTestLogger() *infrastructure.Logger {
+	return infrastructure.NewLogger(false)
+}
+
+func newTestMetrics() *infrastructure.Metrics {
+	prometheus.DefaultRegisterer = prometheus.NewRegistry()
+	metrics, _ := infrastructure.NewMetrics()
+	return metrics
 }
