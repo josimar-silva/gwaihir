@@ -2,7 +2,7 @@ module github.com/josimar-silva/gwaihir
 
 go 1.23.0
 
-toolchain go1.24.13
+toolchain go1.25.7
 
 require (
 	github.com/gin-gonic/gin v1.11.0
