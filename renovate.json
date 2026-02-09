@@ -61,11 +61,11 @@
       "matchManagers": [
         "dockerfile"
       ],
-      "matchPackagePatterns": [
-        "^golang"
-      ],
       "labels": [
         "go-version"
+      ],
+      "matchPackageNames": [
+        "/^golang/"
       ]
     },
     {
