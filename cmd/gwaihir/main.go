@@ -61,7 +61,12 @@ func main() {
 	packetSender := repository.NewWoLPacketSender()
 	wolUseCase := usecase.NewWoLUseCase(machineRepo, packetSender, logger, metrics)
 	handler := httpdelivery.NewHandler(wolUseCase, logger, metrics, Version, BuildTime, GitCommit)
-	router := httpdelivery.NewRouter(handler)
+
+	apiKey := os.Getenv("GWAIHIR_API_KEY")
+	if apiKey == "" {
+		logger.Warn("No API key configured (GWAIHIR_API_KEY not set) - protected endpoints will not require authentication")
+	}
+	router := httpdelivery.NewRouterWithAuth(handler, apiKey)
 
 	addr := fmt.Sprintf(":%s", port)
 	server := &http.Server{
