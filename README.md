@@ -4,7 +4,7 @@
 <div align="center"> 
   <!-- Go version -->
   <a href="https://go.dev/doc/devel/release">
-    <img src="https://img.shields.io/badge/go-1.22.2+-blue" alt="go version" />
+    <img src="https://img.shields.io/badge/go-1.23.0+-blue" alt="go version" />
   </a>
   <!-- OSSF Score Card -->
   <a href="https://scorecard.dev/viewer/?uri=github.com/josimar-silva/gwaihir">
@@ -22,9 +22,21 @@
   <a href="https://hello.from-gondor.com/">
     <img src="https://status.from-gondor.com/api/v1/endpoints/external_gwaihir/response-times/30d/badge.svg" alt="Gwaihir Response Time" />
   </a>
+  <!-- CD -->
+  <a href="https://github.com/josimar-silva/gwaihir/actions/workflows/cd.yaml">
+    <img src="https://github.com/josimar-silva/gwaihir/actions/workflows/cd.yaml/badge.svg" alt="continuous delivery" />
+  </a>
+  <!-- CI -->
+  <a href="https://github.com/josimar-silva/gwaihir/actions/workflows/ci.yaml">
+    <img src="https://github.com/josimar-silva/gwaihir/actions/workflows/ci.yaml/badge.svg" alt="continuous integration" />
+  </a>
+  <!-- Docker -->
+  <a href="https://github.com/josimar-silva/gwaihir/actions/workflows/docker.yaml">
+    <img src="https://github.com/josimar-silva/gwaihir/actions/workflows/docker.yaml/badge.svg" alt="docker" />
+  </a>
   <!-- CodeQL Advanced -->
   <a href="https://github.com/josimar-silva/gwaihir/actions/workflows/codeql.yaml">
-    <img src="https://github.com/josimar-silva/gwaihir/actions/workflows/codeql.yaml/badge.svg" alt="Helm Charts" />
+    <img src="https://github.com/josimar-silva/gwaihir/actions/workflows/codeql.yaml/badge.svg" alt="CodeQL" />
   </a>
 </div>
 
