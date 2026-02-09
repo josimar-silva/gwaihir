@@ -27,7 +27,6 @@ linters:
     - nakedret
     - noctx
     - nolintlint
-    - revive
     - unconvert
     - unparam
     - whitespace
@@ -70,13 +69,6 @@ linters-settings:
       - opinionated
       - performance
       - style
-
-  revive:
-    rules:
-      - name: unused-parameter
-        disabled: true
-      - name: unexported-return
-        disabled: true
 
 issues:
   exclude-rules:

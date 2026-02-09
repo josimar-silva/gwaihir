@@ -5,21 +5,25 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	httpdelivery "github.com/josimar-silva/gwaihir/internal/delivery/http"
+	"github.com/josimar-silva/gwaihir/internal/infrastructure"
 	"github.com/josimar-silva/gwaihir/internal/repository"
 	"github.com/josimar-silva/gwaihir/internal/usecase"
 )
 
 func main() {
+	inProduction, _ := strconv.ParseBool(os.Getenv("GWAIHIR_PRODUCTION"))
+	logger := infrastructure.NewLogger(inProduction)
+
 	configPath := os.Getenv("GWAIHIR_CONFIG")
 	if configPath == "" {
 		configPath = "/etc/gwaihir/machines.yaml"
@@ -34,21 +38,29 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	log.Printf("Loading machine configuration from: %s", configPath)
+	metrics, err := infrastructure.NewMetrics()
+	if err != nil {
+		logger.Error("Failed to initialize metrics", infrastructure.Any("error", err))
+		os.Exit(1)
+	}
+
+	logger.Info("Loading machine configuration", infrastructure.String("path", configPath))
 	machineRepo, err := repository.NewYAMLMachineRepository(configPath)
 	if err != nil {
-		log.Fatalf("Failed to initialize machine repository: %v", err)
+		logger.Error("Failed to initialize machine repository", infrastructure.Any("error", err))
+		os.Exit(1)
 	}
 
 	machines, _ := machineRepo.GetAll()
-	log.Printf("Loaded %d machine(s) into allowlist", len(machines))
+	logger.Info("Machine configuration loaded", infrastructure.Int("count", len(machines)))
 	for _, m := range machines {
-		log.Printf("  - %s (%s): %s", m.Name, m.ID, m.MAC)
+		logger.Debug("Machine registered", infrastructure.String("name", m.Name), infrastructure.String("id", m.ID))
 	}
+	metrics.ConfiguredMachines.Set(float64(len(machines)))
 
 	packetSender := repository.NewWoLPacketSender()
-	wolUseCase := usecase.NewWoLUseCase(machineRepo, packetSender)
-	handler := httpdelivery.NewHandler(wolUseCase, Version, BuildTime, GitCommit)
+	wolUseCase := usecase.NewWoLUseCase(machineRepo, packetSender, logger, metrics)
+	handler := httpdelivery.NewHandler(wolUseCase, logger, metrics, Version, BuildTime, GitCommit)
 	router := httpdelivery.NewRouter(handler)
 
 	addr := fmt.Sprintf(":%s", port)
@@ -61,25 +73,30 @@ func main() {
 		IdleTimeout:       30 * time.Second,
 	}
 
-	log.Printf("Gwaihir, the Windlord, is listening on %s...", addr)
-	log.Printf("Version: %s, BuildTime: %s, GitCommit: %s", Version, BuildTime, GitCommit)
+	logger.Info("Server starting",
+		infrastructure.String("address", addr),
+		infrastructure.String("version", Version),
+		infrastructure.String("buildTime", BuildTime),
+		infrastructure.String("gitCommit", GitCommit),
+	)
 
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
 
-		log.Println("Shutting down server...")
+		logger.Info("Shutdown signal received")
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := server.Shutdown(ctx); err != nil {
-			log.Printf("Server shutdown error: %v", err)
+			logger.Error("Server shutdown error", infrastructure.Any("error", err))
 		}
 	}()
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
+		logger.Error("Server listen error", infrastructure.Any("error", err))
+		os.Exit(1)
 	}
 
-	log.Println("Server stopped gracefully")
+	logger.Info("Server stopped gracefully")
 }
