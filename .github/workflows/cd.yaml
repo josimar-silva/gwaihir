@@ -76,10 +76,13 @@ jobs:
           fetch-depth: 0
 
       - name: ⬇️ Download binary from CI
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: dawidd6/action-download-artifact@5c98f0b039f36ef966fdb7dfa9779262785ecb05 # v14
         with:
+          workflow: ci.yaml
           name: gwaihir-${{ github.event.workflow_run.head_sha }}
           path: bin/
+          github_token: ${{ github.token }}
+          run_id: ${{ github.event.workflow_run.id }}
 
       - name: ✅ Verify binary exists
         run: |
