@@ -47,6 +47,12 @@ jobs:
       - name: ⚙️ Install dependencies
         run: just ci
 
+      - name: ⚙️ Install golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.6
+          install-only: true
+
       - name: 📝 Check lints and formatting
         run: just check
 
