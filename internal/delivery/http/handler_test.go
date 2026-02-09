@@ -1,14 +1,19 @@
-package http //nolint:revive
+// Package http tests HTTP delivery layer.
+package http
 
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/josimar-silva/gwaihir/internal/domain"
+	"github.com/josimar-silva/gwaihir/internal/infrastructure"
 	"github.com/josimar-silva/gwaihir/internal/usecase"
 )
 
@@ -80,8 +85,11 @@ func newHandlerForTesting(machines map[string]*domain.Machine) (*Handler, *mockR
 
 	repo := &mockRepository{machines: machines}
 	sender := &mockPacketSender{}
-	wolUseCase := usecase.NewWoLUseCase(repo, sender)
-	handler := NewHandler(wolUseCase, "0.1.0", "2024-01-01T00:00:00Z", "abc123")
+	logger := infrastructure.NewLogger(false)
+	prometheus.DefaultRegisterer = prometheus.NewRegistry()
+	metrics, _ := infrastructure.NewMetrics()
+	wolUseCase := usecase.NewWoLUseCase(repo, sender, logger, metrics)
+	handler := NewHandler(wolUseCase, logger, metrics, "0.1.0", "2024-01-01T00:00:00Z", "abc123")
 
 	return handler, repo, sender
 }
@@ -427,7 +435,7 @@ func TestHTTP_WakeWithPacketError(t *testing.T) {
 
 	// Make sender fail
 	sender.shouldFailCount = 1
-	sender.sendError = &gin.Error{Err: nil, Type: gin.ErrorTypeBind, Meta: "network error"}
+	sender.sendError = fmt.Errorf("network error")
 
 	reqBody := WakeRequest{MachineID: "saruman"}
 	body, _ := json.Marshal(reqBody)

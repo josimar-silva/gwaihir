@@ -1,8 +1,10 @@
-// Package http provides HTTP delivery layer handlers and routes. //nolint:revive
+// Package http provides HTTP delivery layer handlers and routes.
 package http
 
 import (
 	"github.com/gin-gonic/gin"
+
+	"github.com/josimar-silva/gwaihir/internal/infrastructure"
 )
 
 // NewRouter creates and configures the Gin router.
@@ -12,9 +14,16 @@ func NewRouter(handler *Handler) *gin.Engine {
 
 	router := gin.Default()
 
-	// Health and version endpoints
+	// Middleware
+	router.Use(RequestIDMiddleware())
+	router.Use(RequestLoggingMiddleware())
+
+	// Health and version endpoints (no auth required)
 	router.GET("/health", handler.Health)
 	router.GET("/version", handler.Version)
+
+	// Metrics endpoint (no auth required)
+	router.GET("/metrics", gin.WrapH(infrastructure.MetricsHandler()))
 
 	// WoL endpoints
 	router.POST("/wol", handler.Wake)
