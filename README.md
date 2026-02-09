@@ -14,6 +14,10 @@
   <a href="./">
     <img src="https://img.shields.io/badge/Gwaihir-v0.1.0-orange.svg" alt="gwaihir" />
   </a>
+  <!-- Coverage -->
+  <a href="https://sonarcloud.io/summary/new_code?id=josimar-silva_gwaihir">
+    <img src="https://sonarcloud.io/api/project_badges/measure?project=josimar-silva_gwaihir&metric=coverage" alt="coverage" />
+  </a>
   <!-- Gondor Health -->
   <a href="https://hello.from-gondor.com/">
     <img src="https://status.from-gondor.com/api/v1/endpoints/external_gwaihir/health/badge.svg" alt="Gwaihir Health" />
