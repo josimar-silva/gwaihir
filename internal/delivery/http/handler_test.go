@@ -1,0 +1,182 @@
+package http //nolint:revive
+
+import (
+	"testing"
+
+	"github.com/josimar-silva/gwaihir/internal/domain"
+	"github.com/josimar-silva/gwaihir/internal/usecase"
+)
+
+// Mock repository for testing
+type mockRepository struct {
+	machines map[string]*domain.Machine
+}
+
+func (m *mockRepository) GetByID(id string) (*domain.Machine, error) {
+	machine, ok := m.machines[id]
+	if !ok {
+		return nil, domain.ErrMachineNotFound
+	}
+	return machine, nil
+}
+
+func (m *mockRepository) GetAll() ([]*domain.Machine, error) {
+	machines := make([]*domain.Machine, 0, len(m.machines))
+	for _, machine := range m.machines {
+		machines = append(machines, machine)
+	}
+	return machines, nil
+}
+
+func (m *mockRepository) Exists(id string) bool {
+	_, ok := m.machines[id]
+	return ok
+}
+
+// Mock WoL packet sender for testing
+type mockPacketSender struct {
+	callCount       int
+	lastMac         string
+	lastBroadcast   string
+	sendError       error
+	shouldFailCount int
+}
+
+func (m *mockPacketSender) SendMagicPacket(mac, broadcast string) error {
+	m.callCount++
+	m.lastMac = mac
+	m.lastBroadcast = broadcast
+
+	if m.shouldFailCount > 0 {
+		m.shouldFailCount--
+		return m.sendError
+	}
+	return nil
+}
+
+// Test helper to create a handler with mocks
+func newHandlerForTesting(machines map[string]*domain.Machine) (*Handler, *mockRepository, *mockPacketSender) {
+	if machines == nil {
+		machines = map[string]*domain.Machine{
+			"saruman": {
+				ID:        "saruman",
+				Name:      "Saruman Server",
+				MAC:       "AA:BB:CC:DD:EE:FF",
+				Broadcast: "192.168.1.255",
+			},
+			"morgoth": {
+				ID:        "morgoth",
+				Name:      "Morgoth Server",
+				MAC:       "11:22:33:44:55:66",
+				Broadcast: "192.168.1.255",
+			},
+		}
+	}
+
+	repo := &mockRepository{machines: machines}
+	sender := &mockPacketSender{}
+	wolUseCase := usecase.NewWoLUseCase(repo, sender)
+	handler := NewHandler(wolUseCase, "0.1.0", "2024-01-01T00:00:00Z", "abc123")
+
+	return handler, repo, sender
+}
+
+// Tests
+
+func TestNewHandler(t *testing.T) {
+	handler, _, _ := newHandlerForTesting(nil)
+
+	if handler == nil {
+		t.Fatal("Expected non-nil handler")
+	}
+	if handler.version != "0.1.0" {
+		t.Errorf("Expected version 0.1.0, got %s", handler.version)
+	}
+	if handler.buildTime != "2024-01-01T00:00:00Z" {
+		t.Errorf("Expected buildTime, got %s", handler.buildTime)
+	}
+	if handler.gitCommit != "abc123" {
+		t.Errorf("Expected gitCommit, got %s", handler.gitCommit)
+	}
+}
+
+func TestHandler_Response_Types(t *testing.T) {
+	// Test response type constructors work
+	successResp := SuccessResponse{Message: "test"}
+	if successResp.Message != "test" {
+		t.Errorf("Expected SuccessResponse.Message to be 'test', got %s", successResp.Message)
+	}
+
+	errorResp := ErrorResponse{Error: "error"}
+	if errorResp.Error != "error" {
+		t.Errorf("Expected ErrorResponse.Error to be 'error', got %s", errorResp.Error)
+	}
+
+	versionResp := VersionResponse{
+		Version:   "1.0.0",
+		BuildTime: "2024-01-01",
+		GitCommit: "abc123",
+	}
+	if versionResp.Version != "1.0.0" {
+		t.Errorf("Expected version 1.0.0, got %s", versionResp.Version)
+	}
+}
+
+func TestHandler_WakeRequest(t *testing.T) {
+	req := WakeRequest{MachineID: "saruman"}
+	if req.MachineID != "saruman" {
+		t.Errorf("Expected MachineID saruman, got %s", req.MachineID)
+	}
+}
+
+func TestHandler_Integration(t *testing.T) {
+	handler, repo, sender := newHandlerForTesting(nil)
+
+	// Verify handler was created with correct usecase
+	if handler.wolUseCase == nil {
+		t.Fatal("Expected wolUseCase to be set")
+	}
+
+	// Verify repository works
+	machine, err := repo.GetByID("saruman")
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if machine == nil {
+		t.Fatal("Expected machine, got nil")
+	}
+	if machine.ID != "saruman" {
+		t.Errorf("Expected ID saruman, got %s", machine.ID)
+	}
+
+	// Verify sender tracks calls
+	if sender.callCount != 0 {
+		t.Errorf("Expected no calls initially, got %d", sender.callCount)
+	}
+}
+
+func TestHandler_EmptyMachineList(t *testing.T) {
+	handler, _, _ := newHandlerForTesting(map[string]*domain.Machine{})
+
+	machines, err := handler.wolUseCase.ListMachines()
+
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if len(machines) != 0 {
+		t.Errorf("Expected empty list, got %d machines", len(machines))
+	}
+}
+
+func TestHandler_MultipleMachines(t *testing.T) {
+	handler, _, _ := newHandlerForTesting(nil)
+
+	machines, err := handler.wolUseCase.ListMachines()
+
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if len(machines) != 2 {
+		t.Errorf("Expected 2 machines, got %d", len(machines))
+	}
+}
