@@ -55,6 +55,14 @@ jobs:
             echo "IS_SNAPSHOT=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: ⏰ Get build time and git commit
+        id: build_info
+        run: |
+          BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
+          GIT_COMMIT=${{ github.sha }}
+          echo "BUILD_TIME=${BUILD_TIME}" >> $GITHUB_OUTPUT
+          echo "GIT_COMMIT=${GIT_COMMIT}" >> $GITHUB_OUTPUT
+
       - name: 🐳 Build Docker metadata
         id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
@@ -76,5 +84,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+            BUILD_TIME=${{ steps.build_info.outputs.BUILD_TIME }}
+            GIT_COMMIT=${{ steps.build_info.outputs.GIT_COMMIT }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
