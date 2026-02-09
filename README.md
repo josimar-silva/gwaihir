@@ -1,14 +1,18 @@
 <p align="center"><img src="docs/images/gwaihir-logo.png" height="400px" weight="400px" alt="Gwaihir logo"></p>
 
 <h1 align="center">Gwaihir</h1>
-<div align="center"> 
+<div align="center">
+   <!-- MIT License -->
+  <a href="./LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="mit license" />
+  </a> 
   <!-- Go version -->
   <a href="https://go.dev/doc/devel/release">
     <img src="https://img.shields.io/badge/go-1.23.0+-blue" alt="go version" />
   </a>
-  <!-- OSSF Score Card -->
-  <a href="https://scorecard.dev/viewer/?uri=github.com/josimar-silva/gwaihir">
-    <img src="https://img.shields.io/ossf-scorecard/github.com/josimar-silva/gwaihir?label=openssf+scorecard" alt="OpenSSF Score Card">
+  <!-- Version -->
+  <a href="./">
+    <img src="https://img.shields.io/badge/Gwaihir-v0.1.0-orange.svg" alt="gwaihir" />
   </a>
   <!-- Gondor Health -->
   <a href="https://hello.from-gondor.com/">
@@ -37,6 +41,10 @@
   <!-- CodeQL Advanced -->
   <a href="https://github.com/josimar-silva/gwaihir/actions/workflows/codeql.yaml">
     <img src="https://github.com/josimar-silva/gwaihir/actions/workflows/codeql.yaml/badge.svg" alt="CodeQL" />
+  </a>
+  <!-- OSSF Score Card -->
+  <a href="https://scorecard.dev/viewer/?uri=github.com/josimar-silva/gwaihir">
+    <img src="https://img.shields.io/ossf-scorecard/github.com/josimar-silva/gwaihir?label=openssf+scorecard" alt="OpenSSF Score Card">
   </a>
 </div>
 
