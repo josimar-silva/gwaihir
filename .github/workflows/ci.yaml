@@ -178,8 +178,12 @@ jobs:
       - name: ⚙️ Install dependencies
         run: just ci
 
+      - name: 🏷️ Get project version
+        id: get_version
+        run: echo "VERSION=$(grep '^const Version' cmd/gwaihir/version.go | cut -d '"' -f 2)" >> $GITHUB_OUTPUT
+
       - name: 🏗️ Build binary
-        run: just build
+        run: just build-release ${{ steps.get_version.outputs.VERSION }}
 
       - name: ⬆️ Upload binary artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
