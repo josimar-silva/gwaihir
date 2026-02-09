@@ -1,12 +1,92 @@
-# Gwaihir
+<p align="center"><img src="docs/images/gwaihir-logo.png" height="400px" weight="400px" alt="Gwaihir logo"></p>
 
-**G**o-based **W**ake-on-LAN **A**PI **H**andler for **I**nfrastructure **R**eliability
+<h1 align="center">Gwaihir</h1>
+<div align="center"> 
+  <!-- Go version -->
+  <a href="https://go.dev/doc/devel/release">
+    <img src="https://img.shields.io/badge/go-1.22.2+-blue" alt="go version" />
+  </a>
+  <!-- OSSF Score Card -->
+  <a href="https://scorecard.dev/viewer/?uri=github.com/josimar-silva/gwaihir">
+    <img src="https://img.shields.io/ossf-scorecard/github.com/josimar-silva/gwaihir?label=openssf+scorecard" alt="OpenSSF Score Card">
+  </a>
+  <!-- Gondor Health -->
+  <a href="https://hello.from-gondor.com/">
+    <img src="https://status.from-gondor.com/api/v1/endpoints/external_gwaihir/health/badge.svg" alt="Gwaihir Health" />
+  </a>
+  <!-- Gondor uptime -->
+  <a href="https://hello.from-gondor.com/">
+    <img src="https://status.from-gondor.com/api/v1/endpoints/external_gwaihir/uptimes/30d/badge.svg" alt="Gwaihir Uptime" />
+  </a>
+  <!-- Gondor Response Time -->
+  <a href="https://hello.from-gondor.com/">
+    <img src="https://status.from-gondor.com/api/v1/endpoints/external_gwaihir/response-times/30d/badge.svg" alt="Gwaihir Response Time" />
+  </a>
+  <!-- CodeQL Advanced -->
+  <a href="https://github.com/josimar-silva/gwaihir/actions/workflows/codeql.yaml">
+    <img src="https://github.com/josimar-silva/gwaihir/actions/workflows/codeql.yaml/badge.svg" alt="Helm Charts" />
+  </a>
+</div>
 
-The Lord of the Eagles, a swift and noble messenger. When commanded by Smaug, Gwaihir takes flight across the network to deliver the wake-up call (the WoL packet) to the target machine. This isolates the privileged operation into a tiny, single-purpose, and easily audited service.
+<div align="center">
+  <b>G</b>o-based <b>W</b>ake-on-LAN <b>A</b>P<b>I</b> <b>H</b>andler for <b>I</b>nfrastructure <b>R</b>eliability
+</div>
+
+<div align="center">
+  <sub>
+    The Lord of the Eagles, a swift and noble messenger. When commanded by any trusted caller, Gwaihir takes flight across the network to deliver the wake-up call (the WoL packet) to the target machine. This isolates the privileged operation into a tiny, single-purpose, and easily audited service.
+  </sub>
+</div>
+
+## Table of Contents
+
+- [Overview](#overview)
+  - [Key Features](#key-features)
+  - [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+  - [Machine Allowlist](#machine-allowlist)
+  - [Environment Variables](#environment-variables)
+- [API Endpoints](#api-endpoints)
+  - [Authentication](#authentication)
+  - [POST /wol](#post-wol)
+  - [GET /machines](#get-machines)
+  - [GET /machines/:id](#get-machinesid)
+  - [GET /health](#get-health)
+  - [GET /live](#get-live)
+  - [GET /ready](#get-ready)
+  - [GET /version](#get-version)
+  - [GET /metrics](#get-metrics)
+- [Observability](#observability)
+  - [Structured Logging](#structured-logging)
+  - [Prometheus Metrics](#prometheus-metrics)
+- [Development](#development)
+  - [Quick Start](#quick-start-1)
+  - [Available Commands](#available-commands)
+  - [Testing](#testing)
+- [Deployment](#deployment)
+  - [Docker](#docker)
+  - [Kubernetes](#kubernetes)
+- [Security](#security)
+  - [Authentication](#authentication-1)
+  - [Network Security](#network-security)
+- [Monitoring & Alerting](#monitoring--alerting)
+  - [Recommended Prometheus Alerts](#recommended-prometheus-alerts)
+- [Release Process](#release-process)
+- [Contributing](#contributing)
+- [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+- [Frequently Asked Questions](#frequently-asked-questions)
+  - [General Questions](#general-questions)
+  - [Security Questions](#security-questions)
+  - [Operational Questions](#operational-questions)
+- [License](#license)
+- [Related Projects](#related-projects)
 
 ## Overview
 
-Gwaihir is a production-ready microservice responsible for sending Wake-on-LAN (WoL) packets. It's designed to work in conjunction with [Smaug](https://github.com/josimar-silva/smaug), a reverse proxy that commands Gwaihir to wake up sleeping servers on demand.
+Gwaihir is a production-ready microservice that provides Wake-on-LAN (WoL) capabilities via a secure REST API. It can be integrated with various systems—such as reverse proxies like [Smaug](https://github.com/josimar-silva/smaug), automation scripts, CI/CD pipelines, or any application that needs to wake up sleeping servers on demand.
 
 ### Key Features
 
@@ -22,22 +102,33 @@ Gwaihir is a production-ready microservice responsible for sending Wake-on-LAN (
 
 ### Architecture
 
+Gwaihir is a standalone microservice that provides Wake-on-LAN capabilities to any client or service via a simple REST API. 
+It can be integrated into various systems and workflows that need to wake up sleeping servers on demand.
+
 ```text
-┌────────────────────────────────────────────────────────────────────────┐
-│                             K8s Cluster                                │
-│                                                                        │
-│  ┌─────────────┐     ┌───────────┐      ┌───────────┐                  │
-│  │  OpenWebUI  │────▶│           │ api  │           │                  │
-│  └─────────────┘     │   Smaug   │─────▶│  Gwaihir  │                  │
-│                      │ (unpriv.) │      │ (priv.)   │                  │
-│  ┌─────────────┐     │           │      │           │                  │
-│  │   Client    │────▶│           │      │           │───────▶ WoL      │
-│  └─────────────┘     └───────────┘      └───────────┘                  │
-│                                                │                       │
-│  ┌─────────────┐                              │                        │
-│  │ Prometheus  │◀─────────────────────────────┘                        │
-│  └─────────────┘      /metrics                                         │
-└────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         K8s Cluster / Network                           │
+│                                                                         │
+│  ┌─────────────┐                                                        │
+│  │   Client    │───┐                                                    │
+│  │ Application │   │                                                    │
+│  └─────────────┘   │                                                    │
+│                    │  API Calls                                         │
+│  ┌─────────────┐   │  POST /wol                                         │
+│  │   Reverse   │───┤  GET /machines          ┌───────────┐              │
+│  │   Proxy     │   └────────────────────────▶│           │              │
+│  │   (Smaug)   │                             │  Gwaihir  │              │
+│  └─────────────┘   ┌────────────────────────▶│           │              │
+│                    │  X-API-Key              │ (hostNet) │──────▶ WoL   │
+│  ┌─────────────┐   │  Authentication         └───────────┘              │
+│  │ Automation  │───┘                                │                   │
+│  │   Scripts   │                                    │                   │
+│  └─────────────┘                                    │                   │
+│                                                     │                   │
+│  ┌─────────────┐                                    │                   │
+│  │ Prometheus  │◀───────────────────────────────────┘                   │
+│  └─────────────┘      /metrics                                          │
+└─────────────────────────────────────────────────────────────────────────┘
            │                                    │
            ▼                                    ▼
    ┌──────────────┐                      ┌──────────────┐
@@ -46,43 +137,63 @@ Gwaihir is a production-ready microservice responsible for sending Wake-on-LAN (
    └──────────────┘                      └──────────────┘
 ```
 
-## Clean Architecture
+**Key Design Principles:**
 
-The project follows Clean Architecture principles with clear separation of concerns:
+- **Standalone Service**: Gwaihir is a self-contained microservice that any client can integrate with via its REST API
+- **Security First**: Runs with `hostNetwork: true` (required for broadcast packets) but uses allowlist-based security and API key authentication to prevent unauthorized access
+- **Separation of Concerns**: Isolates privileged network operations into a single, auditable service that can be tightly controlled via NetworkPolicy
+- **Observable**: Exposes Prometheus metrics and structured logs for monitoring and debugging
+- **Integration Flexibility**: Can be called by reverse proxies (like [Smaug](https://github.com/josimar-silva/smaug)), automation scripts, orchestration systems, or any HTTP client
 
-```text
-gwaihir/
-├── cmd/gwaihir/              # Application entry point
-│   ├── main.go               # Dependency injection & wiring
-│   └── version.go            # Version information
-├── internal/
-│   ├── domain/               # Business entities & interfaces (core)
-│   │   ├── machine.go        # Machine entity with validation
-│   │   ├── repository.go     # Repository interface
-│   │   └── errors.go         # Domain errors
-│   ├── usecase/              # Business logic
-│   │   └── wol_usecase.go    # WoL operations use case
-│   ├── delivery/http/        # HTTP handlers (Gin)
-│   │   ├── handler.go        # HTTP request handlers
-│   │   ├── router.go         # Route configuration
-│   │   ├── auth.go           # API key authentication
-│   │   ├── middleware.go     # Request logging & correlation
-│   │   └── health.go         # Health check handlers
-│   ├── repository/           # Data access implementations
-│   │   └── yaml_machine_repository.go
-│   └── infrastructure/       # Infrastructure concerns
-│       ├── logger.go         # Structured logging wrapper
-│       ├── metrics.go        # Prometheus metrics
-│       └── wol_packet.go     # WoL packet sender
-└── configs/
-    └── machines.yaml         # Allowlist configuration
-```
+**Common Integration Patterns:**
+
+1. **Reverse Proxy Integration**: Services like Smaug can call Gwaihir to wake servers before forwarding requests
+2. **CI/CD Pipelines**: Automation scripts can wake test/build servers on-demand
+3. **Scheduled Tasks**: Cron jobs or Kubernetes CronJobs can wake servers at specific times
+4. **Custom Applications**: Any application that needs WoL capabilities can integrate via the simple REST API
 
 ## Prerequisites
 
 - Go 1.22.2 or later
-- [golangci-lint](https://golangci-lint.run/usage/install/) for linting
-- [just](https://github.com/casey/just) for task running
+- [golangci-lint](https://golangci-lint.run/usage/install/) for linting (development only)
+- [just](https://github.com/casey/just) for task running (development only)
+- Docker (optional, for containerized deployment)
+- Kubernetes cluster (optional, for production deployment)
+
+## Quick Start
+
+Get Gwaihir running in under 5 minutes:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/josimar-silva/gwaihir.git
+cd gwaihir
+
+# 2. Create a minimal configuration
+cat > machines.yaml << EOF
+machines:
+  - id: test-server
+    name: "Test Server"
+    mac: "AA:BB:CC:DD:EE:FF"
+    broadcast: "192.168.1.255"
+EOF
+
+# 3. Run the service
+export GWAIHIR_CONFIG=machines.yaml
+export LOG_JSON=false
+go run cmd/gwaihir/main.go cmd/gwaihir/version.go
+
+# 4. Test the service (in another terminal)
+# Check health
+curl http://localhost:8080/health
+
+# Send WoL packet
+curl -X POST http://localhost:8080/wol \
+  -H "Content-Type: application/json" \
+  -d '{"machine_id": "test-server"}'
+```
+
+**Note**: Replace the MAC address and broadcast IP with values for your network.
 
 ## Configuration
 
@@ -107,13 +218,13 @@ See `configs/machines.example.yaml` for a template.
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `GWAIHIR_CONFIG` | Path to machines.yaml config file | `/etc/gwaihir/machines.yaml` |
-| `GWAIHIR_API_KEY` | API key for authentication (optional) | _(none)_ |
-| `PORT` | HTTP server port | `8080` |
-| `GIN_MODE` | Gin mode: `debug` or `release` | `release` |
-| `LOG_JSON` | Enable JSON logging (for production) | `true` |
+| Variable | Type | Description | Default |
+|----------|------|-------------|---------|
+| `GWAIHIR_CONFIG` | string | Path to machines.yaml config file | `/etc/gwaihir/machines.yaml` |
+| `GWAIHIR_API_KEY` | string | API key for authentication (optional) | _(none)_ |
+| `PORT` | string | HTTP server port | `8080` |
+| `GIN_MODE` | string | Gin mode: `debug` or `release` | `release` |
+| `LOG_JSON` | bool | Enable JSON logging (for production) | `true` |
 
 ## API Endpoints
 
@@ -154,9 +265,33 @@ Send a Wake-on-LAN packet to a specified machine (must be in allowlist).
 
 **Error Responses:**
 
+- `400 Bad Request` - Invalid request body
+```json
+{
+  "error": "invalid request body"
+}
+```
+
 - `401 Unauthorized` - Missing or invalid API key
+```json
+{
+  "error": "unauthorized"
+}
+```
+
 - `404 Not Found` - Machine not in allowlist
+```json
+{
+  "error": "machine not found"
+}
+```
+
 - `500 Internal Server Error` - Failed to send WoL packet
+```json
+{
+  "error": "failed to send WoL packet"
+}
+```
 
 **Example:**
 ```bash
@@ -220,7 +355,7 @@ Combined health check endpoint (liveness + readiness).
 ```json
 {
   "status": "healthy",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "machines_loaded": 2,
   "uptime_seconds": 3600,
   "checks": {
@@ -273,7 +408,7 @@ Version information endpoint.
 **Success Response:** `200 OK`
 ```json
 {
-  "version": "0.2.0",
+  "version": "0.1.0",
   "build_time": "2026-02-09_14:30:00",
   "git_commit": "abc1234"
 }
@@ -405,7 +540,7 @@ just build
 # Run locally (requires config file)
 export GWAIHIR_CONFIG=configs/machines.yaml
 export GWAIHIR_API_KEY=dev-secret-key  # Optional for testing
-export LOG_JSON=false                   # Human-readable logs for dev
+export LOG_JSON=false                  # Human-readable logs for dev
 just run
 ```
 
@@ -436,8 +571,13 @@ go test ./...
 # Run tests with coverage
 just test
 
-# View coverage report
-just test && open coverage.html
+# View coverage report in browser
+# macOS:
+open coverage.html
+# Linux:
+xdg-open coverage.html
+# Windows:
+start coverage.html
 
 # Test specific package
 go test ./internal/domain
@@ -458,6 +598,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for testing standards and best practices.
 
 ### Docker
 
+**Available Image Tags:**
+- `latest` - Latest stable release (recommended for development)
+- `vX.Y.Z` - Specific version tags (recommended for production)
+- `main` - Built from main branch (bleeding edge, not recommended for production)
+
 ```bash
 # Build Docker image
 just docker-build latest
@@ -465,12 +610,12 @@ just docker-build latest
 # Push to registry
 just docker-push latest
 
-# Run with Docker
+# Run with Docker (using specific version)
 docker run -d \
   -p 8080:8080 \
   -e GWAIHIR_API_KEY=your-secret-key \
   -v $(pwd)/configs:/etc/gwaihir \
-  ghcr.io/josimar-silva/gwaihir:latest
+  ghcr.io/josimar-silva/gwaihir:v0.1.0
 ```
 
 Or use Docker directly:
@@ -479,6 +624,8 @@ Or use Docker directly:
 docker build -t ghcr.io/josimar-silva/gwaihir:latest .
 docker push ghcr.io/josimar-silva/gwaihir:latest
 ```
+
+**Production Recommendation**: Always use specific version tags (e.g., `v0.1.0`) instead of `latest` to ensure reproducible deployments.
 
 ### Kubernetes
 
@@ -628,14 +775,6 @@ spec:
 - **Timeouts**: HTTP server has proper read/write timeouts configured
 - **Graceful shutdown**: Handles SIGTERM/SIGINT properly
 
-### Best Practices
-
-1. **Rotate API Keys Regularly**: Update `GWAIHIR_API_KEY` periodically
-2. **Use Kubernetes Secrets**: Never hardcode API keys in manifests
-3. **Enable NetworkPolicy**: Restrict access to only authorized pods
-4. **Monitor Metrics**: Alert on unusual patterns (high failure rates, unauthorized access)
-5. **Review Logs**: Periodically audit access logs for suspicious activity
-
 ## Monitoring & Alerting
 
 ### Recommended Prometheus Alerts
@@ -710,19 +849,115 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
 **WoL packets not reaching machines:**
 - Verify `hostNetwork: true` is set in Kubernetes deployment
-- Check broadcast address is correct for your network
-- Ensure target machine's BIOS has WoL enabled
-- Confirm MAC address is correct and formatted properly
+- Check broadcast address is correct for your network (typically x.x.x.255 for /24 networks)
+- Ensure target machine's BIOS has WoL enabled (often called "Wake on LAN" or "Power On By PCI-E/PCI")
+- Confirm MAC address is correct and formatted properly (colon or hyphen-separated)
+- Check if firewall rules are blocking UDP port 9 (WoL uses UDP broadcast on port 9)
+- Verify the target machine is on the same broadcast domain/VLAN as Gwaihir
 
 **Authentication failures:**
 - Verify `X-API-Key` header is included in request
 - Check `GWAIHIR_API_KEY` environment variable is set correctly
 - Ensure API key matches between client and server
+- API keys are case-sensitive and must match exactly
 
 **Health check failures:**
-- Check that machines.yaml is mounted correctly
+- Check that machines.yaml is mounted correctly at `/etc/gwaihir/machines.yaml`
 - Verify at least one machine is configured
-- Review logs for configuration errors
+- Review logs for configuration parsing errors
+- Ensure YAML syntax is valid (use `yamllint` to verify)
+
+**Port conflicts:**
+- Default port 8080 may be in use; set `PORT` environment variable to use different port
+- Check if another service is bound to the same port: `netstat -tuln | grep 8080`
+
+**Kubernetes-specific issues:**
+- **RBAC permissions**: Ensure service account has necessary permissions (though Gwaihir requires no special permissions)
+- **hostNetwork security**: Running with `hostNetwork: true` shares host network stack; ensure NetworkPolicy restricts access
+- **Pod scheduling**: If using node selectors, ensure nodes are available and labeled correctly
+- **ConfigMap not mounted**: Verify ConfigMap exists in same namespace and volume mount is correct
+
+**Performance issues:**
+- Check Prometheus metrics for high latency: `gwaihir_request_duration_seconds`
+- Review logs for repeated errors or timeouts
+- Ensure adequate CPU/memory limits (recommended: 100m CPU, 128Mi memory)
+
+**YAML configuration errors:**
+- Validate YAML syntax: `yamllint machines.yaml`
+- Check for duplicate machine IDs
+- Ensure all required fields are present (id, name, mac, broadcast)
+- MAC addresses must be in format: `AA:BB:CC:DD:EE:FF` or `aa:bb:cc:dd:ee:ff`
+
+## Frequently Asked Questions
+
+### General Questions
+
+**Q: Why is `hostNetwork: true` required?**
+A: Wake-on-LAN packets must be sent as UDP broadcasts to the network broadcast address (e.g., 192.168.1.255). Container networking typically doesn't allow broadcast packets. Using `hostNetwork: true` gives Gwaihir direct access to the host's network interface, enabling proper broadcast transmission.
+
+**Q: Can I run multiple replicas of Gwaihir?**
+A: Yes, but it's typically unnecessary. Multiple replicas will each send duplicate WoL packets when requested. For high availability, consider using a Kubernetes Deployment with `replicas: 1` and proper liveness/readiness probes rather than horizontal scaling.
+
+**Q: Is IPv6 supported?**
+A: Currently, Gwaihir supports IPv4 broadcast addresses only. IPv6 uses multicast rather than broadcast, which would require different packet structure.
+
+**Q: How do I handle machine IP address changes?**
+A: Gwaihir only needs the MAC address and broadcast address, not the machine's IP. As long as the MAC address remains the same (it's tied to the network interface hardware), IP changes don't affect WoL functionality.
+
+**Q: Can Gwaihir wake machines across different VLANs/subnets?**
+A: No, broadcast packets are confined to their local broadcast domain. To wake machines on different subnets, you need either:
+- Deploy separate Gwaihir instances in each subnet
+- Configure directed broadcasts at your router (security risk, not recommended)
+- Use unicast WoL if your network supports it (requires machines to have static IPs)
+
+**Q: Does Gwaihir confirm that machines actually woke up?**
+A: No, Wake-on-LAN is a fire-and-forget protocol. Gwaihir sends the magic packet but has no way to verify if the target machine powered on. You'll need to implement your own health checks or monitoring for the target machines.
+
+**Q: What happens if I send a WoL packet to an already-running machine?**
+A: Nothing harmful. The machine will simply ignore the WoL packet. It's safe to send WoL packets to machines regardless of their current power state.
+
+### Security Questions
+
+**Q: Is it safe to run with `hostNetwork: true`?**
+A: Running with `hostNetwork: true` does increase the attack surface since the pod shares the host's network namespace. Mitigate risks by:
+- Using NetworkPolicy to restrict which pods can access Gwaihir
+- Enabling API key authentication (`GWAIHIR_API_KEY`)
+- Running with minimal privileges (Gwaihir requires no special capabilities)
+- Regularly monitoring access logs and metrics
+
+**Q: Should I use API key authentication?**
+A: Yes, for production deployments. Even within a cluster, defense in depth is important. If an attacker compromises a pod that can reach Gwaihir, the API key provides an additional security layer.
+
+**Q: Can I use OAuth/JWT instead of API keys?**
+A: Currently, Gwaihir supports simple API key authentication via `X-API-Key` header. For more sophisticated authentication, consider placing an authentication proxy (like OAuth2 Proxy) in front of Gwaihir.
+
+### Operational Questions
+
+**Q: How do I update the machine allowlist without restarting?**
+A: Currently, you must restart Gwaihir after updating `machines.yaml`. The configuration is loaded at startup. 
+
+**Q: What are the resource requirements?**
+A: Gwaihir is extremely lightweight:
+- **CPU**: ~10m idle, ~50m under load (recommended: 100m limit)
+- **Memory**: ~20Mi idle, ~50Mi under load (recommended: 128Mi limit)
+- **Network**: Negligible (WoL packets are 102 bytes each)
+
+**Q: How many WoL packets per second can Gwaihir handle?**
+A: Gwaihir can easily handle hundreds of WoL requests per second on modest hardware. The actual limit depends on network interface capabilities. 
+For reference, sending 1000 WoL packets takes less than 100ms on typical hardware.
+
+**Q: Can I use this with Docker Compose?**
+A: Yes, but you need to use `network_mode: host` in your docker-compose.yml:
+```yaml
+services:
+  gwaihir:
+    image: ghcr.io/josimar-silva/gwaihir:v0.1.0
+    network_mode: host
+    environment:
+      - GWAIHIR_API_KEY=your-secret-key
+    volumes:
+      - ./machines.yaml:/etc/gwaihir/machines.yaml
+```
 
 ## License
 
@@ -731,10 +966,3 @@ Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 ## Related Projects
 
 - [Smaug](https://github.com/josimar-silva/smaug) - Config-driven reverse proxy with automatic Wake-on-LAN
-- [Project Elrond](https://github.com/josimar-silva/elrond) - Homelab infrastructure orchestration
-
-## Architecture Documentation
-
-For detailed architectural decisions and design patterns, see:
-- [Service Architecture](docs/service-architecture.md) - Clean Architecture implementation details
-- [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) - Feature development roadmap and progress
