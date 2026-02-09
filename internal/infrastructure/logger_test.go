@@ -1,7 +1,6 @@
 package infrastructure
 
 import (
-	"log/slog"
 	"testing"
 )
 
@@ -25,25 +24,25 @@ func TestNewLoggerProduction(t *testing.T) {
 	}
 }
 
-func TestLoggerInfo(t *testing.T) {
+func TestLoggerInfo(_ *testing.T) {
 	logger := NewLogger(false)
 	// Should not panic
 	logger.Info("test message", String("key", "value"))
 }
 
-func TestLoggerWarn(t *testing.T) {
+func TestLoggerWarn(_ *testing.T) {
 	logger := NewLogger(false)
 	// Should not panic
 	logger.Warn("test warning", String("key", "value"))
 }
 
-func TestLoggerError(t *testing.T) {
+func TestLoggerError(_ *testing.T) {
 	logger := NewLogger(false)
 	// Should not panic
 	logger.Error("test error", String("key", "value"))
 }
 
-func TestLoggerDebug(t *testing.T) {
+func TestLoggerDebug(_ *testing.T) {
 	logger := NewLogger(false)
 	// Should not panic
 	logger.Debug("test debug", String("key", "value"))
@@ -93,7 +92,7 @@ func TestAttributeHelpers(t *testing.T) {
 	logger.Info("test attributes", attr)
 }
 
-func TestMultipleAttributes(t *testing.T) {
+func TestMultipleAttributes(_ *testing.T) {
 	logger := NewLogger(false)
 	// Should handle multiple attributes without panic
 	logger.Info("test message",

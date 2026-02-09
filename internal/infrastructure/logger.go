@@ -2,6 +2,7 @@
 package infrastructure
 
 import (
+	"context"
 	"log/slog"
 	"os"
 )
@@ -33,22 +34,22 @@ func NewLogger(inProduction bool) *Logger {
 
 // Info logs an info-level message with attributes.
 func (l *Logger) Info(msg string, attrs ...slog.Attr) {
-	l.logger.LogAttrs(nil, slog.LevelInfo, msg, attrs...)
+	l.logger.LogAttrs(context.Background(), slog.LevelInfo, msg, attrs...)
 }
 
 // Warn logs a warn-level message with attributes.
 func (l *Logger) Warn(msg string, attrs ...slog.Attr) {
-	l.logger.LogAttrs(nil, slog.LevelWarn, msg, attrs...)
+	l.logger.LogAttrs(context.Background(), slog.LevelWarn, msg, attrs...)
 }
 
 // Error logs an error-level message with attributes.
 func (l *Logger) Error(msg string, attrs ...slog.Attr) {
-	l.logger.LogAttrs(nil, slog.LevelError, msg, attrs...)
+	l.logger.LogAttrs(context.Background(), slog.LevelError, msg, attrs...)
 }
 
 // Debug logs a debug-level message with attributes.
 func (l *Logger) Debug(msg string, attrs ...slog.Attr) {
-	l.logger.LogAttrs(nil, slog.LevelDebug, msg, attrs...)
+	l.logger.LogAttrs(context.Background(), slog.LevelDebug, msg, attrs...)
 }
 
 // WithContext returns a new Logger with additional context attributes.
