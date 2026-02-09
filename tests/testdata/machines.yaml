@@ -1,0 +1,14 @@
+# Integration Test Machine Configuration
+# This is test-specific data isolated from production config
+# Machines used only for integration testing
+
+machines:
+  - id: saruman
+    name: "Test Machine - Saruman"
+    mac: "AA:BB:CC:DD:EE:FF"
+    broadcast: "192.168.1.255"
+
+  - id: morgoth
+    name: "Test Machine - Morgoth"
+    mac: "11:22:33:44:55:66"
+    broadcast: "192.168.1.255"

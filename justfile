@@ -44,6 +44,10 @@ test:
 test-fast:
     go test -v -race ./...
 
+# Run integration tests
+test-integration:
+    go test -v -tags=integration -run TestIntegration ./tests/...
+
 # Build the binary
 build:
     go build -o bin/gwaihir -ldflags="-s -w" ./cmd/gwaihir
@@ -71,7 +75,7 @@ clean:
     rm -f coverage.out coverage.html
 
 # Run all quality checks before committing
-pre-commit: format lint test
+pre-commit: format lint test test-integration
 
 # Prepare for a new release
 pre-release:
