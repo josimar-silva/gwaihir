@@ -565,3 +565,304 @@ observability:
 	assert.Equal(t, "json", cfg.Server.Log.Format)
 	assert.Equal(t, "debug", cfg.Server.Log.Level)
 }
+
+// Validation tests
+
+func TestConfig_Validate_ValidConfig(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "json",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{
+			APIKey: "test-key",
+		},
+		Machines: []MachineConfig{
+			{
+				ID:        "m1",
+				Name:      "Machine 1",
+				MAC:       "00:11:22:33:44:55",
+				Broadcast: "192.168.1.255",
+			},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.NoError(t, err)
+}
+
+func TestConfig_Validate_PortOutOfRange_Low(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 0,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "M", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "port")
+}
+
+func TestConfig_Validate_PortOutOfRange_High(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 65536,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "M", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "port")
+}
+
+func TestConfig_Validate_InvalidLogFormat(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "invalid",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "M", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "format")
+}
+
+func TestConfig_Validate_InvalidLogLevel(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "json",
+				Level:  "invalid",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "M", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "level")
+}
+
+func TestConfig_Validate_APIKeyRequired(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: ""},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "M", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "api_key")
+}
+
+func TestConfig_Validate_MachinesRequired(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines:       []MachineConfig{},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "machine")
+}
+
+func TestConfig_Validate_InvalidMachineMAC(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "M", MAC: "invalid-mac", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "MAC")
+}
+
+func TestConfig_Validate_InvalidMachineBroadcast(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "M", MAC: "00:11:22:33:44:55", Broadcast: "not-an-ip"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "broadcast")
+}
+
+func TestConfig_Validate_AllLogLevelsValid(t *testing.T) {
+	levels := []string{"debug", "info", "warn", "error"}
+
+	for _, level := range levels {
+		cfg := &Config{
+			Server: ServerConfig{
+				Port: 8080,
+				Log: LogConfig{
+					Format: "text",
+					Level:  level,
+				},
+			},
+			Authentication: AuthenticationConfig{APIKey: "key"},
+			Machines: []MachineConfig{
+				{ID: "m1", Name: "M", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+			},
+			Observability: ObservabilityConfig{
+				HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+				Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+			},
+		}
+
+		err := cfg.Validate()
+		assert.NoError(t, err, "level %s should be valid", level)
+	}
+}
+
+func TestConfig_Validate_AllLogFormatsValid(t *testing.T) {
+	formats := []string{"json", "text"}
+
+	for _, format := range formats {
+		cfg := &Config{
+			Server: ServerConfig{
+				Port: 8080,
+				Log: LogConfig{
+					Format: format,
+					Level:  "info",
+				},
+			},
+			Authentication: AuthenticationConfig{APIKey: "key"},
+			Machines: []MachineConfig{
+				{ID: "m1", Name: "M", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+			},
+			Observability: ObservabilityConfig{
+				HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+				Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+			},
+		}
+
+		err := cfg.Validate()
+		assert.NoError(t, err, "format %s should be valid", format)
+	}
+}
+
+func TestConfig_Validate_MultipleMachines(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "M1", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+			{ID: "m2", Name: "M2", MAC: "AA:BB:CC:DD:EE:FF", Broadcast: "192.168.1.255"},
+			{ID: "m3", Name: "M3", MAC: "11:22:33:44:55:66", Broadcast: "10.0.0.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.NoError(t, err)
+}

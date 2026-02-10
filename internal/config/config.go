@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"os"
+	"regexp"
 	"strconv"
 
 	"gopkg.in/yaml.v3"
@@ -89,6 +91,93 @@ func setDefaults(cfg *Config) {
 		trueVal := true
 		cfg.Observability.Metrics.Enabled = &trueVal
 	}
+}
+
+// Validate validates all configuration fields and returns an error if any validation fails.
+// Validation checks:
+// - server.port: must be in range 1-65535
+// - server.log.format: must be "json" or "text"
+// - server.log.level: must be "debug", "info", "warn", or "error"
+// - authentication.api_key: must not be empty
+// - machines: must have at least 1 machine, each must be valid (MAC, broadcast IP)
+func (cfg *Config) Validate() error {
+	// Validate port
+	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
+		return fmt.Errorf("invalid server port: must be between 1 and 65535, got %d", cfg.Server.Port)
+	}
+
+	// Validate log format
+	if err := validateLogFormat(cfg.Server.Log.Format); err != nil {
+		return err
+	}
+
+	// Validate log level
+	if err := validateLogLevel(cfg.Server.Log.Level); err != nil {
+		return err
+	}
+
+	// Validate API key
+	if cfg.Authentication.APIKey == "" {
+		return fmt.Errorf("authentication.api_key is required and cannot be empty")
+	}
+
+	// Validate machines
+	if len(cfg.Machines) == 0 {
+		return fmt.Errorf("at least one machine must be configured")
+	}
+
+	for i, machine := range cfg.Machines {
+		if err := validateMachine(machine); err != nil {
+			return fmt.Errorf("machine %d (%s): %w", i, machine.ID, err)
+		}
+	}
+
+	return nil
+}
+
+// validateLogFormat checks if the log format is valid.
+func validateLogFormat(format string) error {
+	validFormats := map[string]bool{"json": true, "text": true}
+	if !validFormats[format] {
+		return fmt.Errorf("invalid server.log.format: must be 'json' or 'text', got '%s'", format)
+	}
+	return nil
+}
+
+// validateLogLevel checks if the log level is valid.
+func validateLogLevel(level string) error {
+	validLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
+	if !validLevels[level] {
+		return fmt.Errorf("invalid server.log.level: must be 'debug', 'info', 'warn', or 'error', got '%s'", level)
+	}
+	return nil
+}
+
+// validateMachine checks if a machine configuration is valid.
+func validateMachine(machine MachineConfig) error {
+	// Validate MAC address format (XX:XX:XX:XX:XX:XX)
+	if !isValidMAC(machine.MAC) {
+		return fmt.Errorf("invalid MAC address format: '%s' (must be XX:XX:XX:XX:XX:XX)", machine.MAC)
+	}
+
+	// Validate broadcast IP
+	if !isValidIP(machine.Broadcast) {
+		return fmt.Errorf("invalid broadcast IP address: '%s' (must be a valid IPv4 address)", machine.Broadcast)
+	}
+
+	return nil
+}
+
+// isValidMAC checks if the MAC address format is valid (XX:XX:XX:XX:XX:XX).
+func isValidMAC(mac string) bool {
+	pattern := `^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$`
+	re := regexp.MustCompile(pattern)
+	return re.MatchString(mac)
+}
+
+// isValidIP checks if the broadcast IP is a valid IPv4 address.
+func isValidIP(ip string) bool {
+	return net.ParseIP(ip) != nil
 }
 
 // Config represents the complete unified configuration for Gwaihir.
