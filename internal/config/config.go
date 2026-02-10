@@ -36,7 +36,9 @@ func LoadConfig(path string) (*Config, error) {
 
 	setDefaults(&cfg)
 
-	applyEnvOverrides(&cfg)
+	if err := applyEnvOverrides(&cfg); err != nil {
+		return nil, fmt.Errorf("invalid environment override: %w", err)
+	}
 
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
@@ -47,11 +49,14 @@ func LoadConfig(path string) (*Config, error) {
 
 // applyEnvOverrides applies environment variable overrides to the configuration.
 // Environment variables take precedence over file values.
-func applyEnvOverrides(cfg *Config) {
+// Returns an error if any environment variable override has an invalid value.
+func applyEnvOverrides(cfg *Config) error {
 	if port := os.Getenv("GWAIHIR_PORT"); port != "" {
-		if p, err := strconv.Atoi(port); err == nil {
-			cfg.Server.Port = p
+		p, err := strconv.Atoi(port)
+		if err != nil {
+			return fmt.Errorf("GWAIHIR_PORT must be a valid port number (1-65535), got '%s': %w", port, err)
 		}
+		cfg.Server.Port = p
 	}
 
 	if format := os.Getenv("GWAIHIR_LOG_FORMAT"); format != "" {
@@ -65,6 +70,8 @@ func applyEnvOverrides(cfg *Config) {
 	if apiKey := os.Getenv("GWAIHIR_API_KEY"); apiKey != "" {
 		cfg.Authentication.APIKey = apiKey
 	}
+
+	return nil
 }
 
 // setDefaults applies sensible default values for optional configuration fields.
