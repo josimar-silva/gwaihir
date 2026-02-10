@@ -10,25 +10,44 @@ import (
 // Logger wraps slog.Logger for structured logging with context.
 type Logger struct {
 	logger *slog.Logger
+	level  string
 }
 
 // NewLogger creates a new structured logger.
-// If inProduction is true, logs are JSON formatted; otherwise human-readable.
-func NewLogger(inProduction bool) *Logger {
+// format: "json" or "text"
+// level: "debug", "info", "warn", or "error"
+func NewLogger(format, level string) *Logger {
 	var handler slog.Handler
+	var slogLevel slog.Level
 
-	if inProduction {
+	// Convert string level to slog.Level
+	switch level {
+	case "debug":
+		slogLevel = slog.LevelDebug
+	case "info":
+		slogLevel = slog.LevelInfo
+	case "warn":
+		slogLevel = slog.LevelWarn
+	case "error":
+		slogLevel = slog.LevelError
+	default:
+		slogLevel = slog.LevelInfo
+	}
+
+	// Create appropriate handler based on format
+	if format == "json" {
 		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelInfo,
+			Level: slogLevel,
 		})
 	} else {
 		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
+			Level: slogLevel,
 		})
 	}
 
 	return &Logger{
 		logger: slog.New(handler),
+		level:  level,
 	}
 }
 
@@ -86,4 +105,14 @@ func Duration(key string, value interface{}) slog.Attr {
 // Any converts an attribute key-value pair for any type.
 func Any(key string, value interface{}) slog.Attr {
 	return slog.Any(key, value)
+}
+
+// GetLevel returns the configured log level.
+func (l *Logger) GetLevel() string {
+	return l.level
+}
+
+// IsDebug returns true if the log level is "debug".
+func (l *Logger) IsDebug() bool {
+	return l.level == "debug"
 }

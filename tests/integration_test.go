@@ -74,7 +74,7 @@ func findProjectRoot(t *testing.T) string {
 
 // startServer starts a test server and returns the base URL and cleanup function.
 func startServer(t *testing.T, port string, configPath string) (string, func()) {
-	logger := infrastructure.NewLogger(false)
+	logger := infrastructure.NewLogger("text", "debug")
 
 	machineRepo, err := repository.NewYAMLMachineRepository(configPath)
 	if err != nil {
@@ -306,7 +306,7 @@ func TestIntegration_APIKeyAuthentication(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	logger := infrastructure.NewLogger(false)
+	logger := infrastructure.NewLogger("text", "debug")
 
 	configPath := getConfigPath(t)
 	machineRepo, err := repository.NewYAMLMachineRepository(configPath)

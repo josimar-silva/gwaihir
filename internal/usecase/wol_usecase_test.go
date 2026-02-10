@@ -380,7 +380,7 @@ func contains(s, substr string) bool {
 }
 
 func newTestLogger() *infrastructure.Logger {
-	return infrastructure.NewLogger(false)
+	return infrastructure.NewLogger("text", "debug")
 }
 
 func newTestMetrics() *infrastructure.Metrics {
