@@ -1,0 +1,59 @@
+# Gwaihir Configuration Example
+# This file demonstrates all available configuration options
+
+server:
+  # HTTP server port
+  port: 8080
+  log:
+    # Logging format: json or text
+    # json: Structured JSON logging for production/cloud environments
+    # text: Human-readable logging for development
+    format: json
+    # Logging level: debug, info, warn, error
+    # debug: All operations logged (verbose, includes health checks/metrics)
+    # info: Standard operations logged (normal, excludes infrastructure endpoints)
+    # warn: Only warnings and errors logged
+    # error: Only errors logged
+    level: info
+
+# Authentication configuration (optional)
+# If omitted, all endpoints are public (no authentication required)
+authentication:
+  # API key for X-API-Key authentication header
+  # Can be overridden by GWAIHIR_API_KEY environment variable
+  api_key: "your-secret-api-key-here"
+
+# Machines that can receive Wake-on-LAN packets
+# At least one machine must be configured
+machines:
+  - id: saruman
+    name: "Development Server"
+    mac: "00:11:22:33:44:55"
+    broadcast: "192.168.1.255"
+
+  - id: gandalf
+    name: "Production Server"
+    mac: "AA:BB:CC:DD:EE:FF"
+    broadcast: "192.168.1.255"
+
+  - id: radagast
+    name: "Backup Server"
+    mac: "11:22:33:44:55:66"
+    broadcast: "10.0.0.255"
+
+# Observability configuration
+# Controls which infrastructure endpoints are exposed
+observability:
+  # Health check endpoints: /health, /live, /ready
+  # Endpoint behavior based on server.log.level:
+  # - debug: Logged
+  # - info and above: Not logged (silent)
+  health_check:
+    enabled: true
+
+  # Metrics endpoint: /metrics (Prometheus format)
+  # Endpoint behavior based on server.log.level:
+  # - debug: Logged
+  # - info and above: Not logged (silent)
+  metrics:
+    enabled: true

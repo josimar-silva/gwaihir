@@ -1,5 +1,31 @@
 package config
 
+import (
+	"fmt"
+	"os"
+
+	"gopkg.in/yaml.v3"
+)
+
+// LoadConfig loads and parses the configuration from a YAML file.
+// Returns a pointer to Config if successful, or an error if the file
+// cannot be read or contains invalid YAML.
+//
+// #nosec G304 - path is controlled by application, not user input
+func LoadConfig(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	return &cfg, nil
+}
+
 // Config represents the complete unified configuration for Gwaihir.
 // It contains all application settings in a single structure that can be
 // loaded from YAML with environment variable overrides.

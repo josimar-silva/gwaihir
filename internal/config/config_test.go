@@ -1,6 +1,9 @@
 package config
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -164,4 +167,112 @@ observability:
 	err := yaml.Unmarshal([]byte(yamlData), &cfg)
 	assert.NoError(t, err)
 	assert.Equal(t, "", cfg.Authentication.APIKey)
+}
+
+func TestLoadConfig_ValidFile(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "config-*.yaml")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	defer func() {
+		_ = os.Remove(filename)
+	}()
+
+	configContent := `
+server:
+  port: 8080
+  log:
+    format: json
+    level: info
+authentication:
+  api_key: "test-key"
+machines:
+  - id: machine1
+    name: "Machine 1"
+    mac: "00:11:22:33:44:55"
+    broadcast: "192.168.1.255"
+observability:
+  health_check:
+    enabled: true
+  metrics:
+    enabled: true
+`
+
+	_, err = tmpFile.WriteString(configContent)
+	assert.NoError(t, err)
+	assert.NoError(t, tmpFile.Close())
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	assert.Equal(t, 8080, cfg.Server.Port)
+	assert.Equal(t, "test-key", cfg.Authentication.APIKey)
+	assert.Len(t, cfg.Machines, 1)
+}
+
+func TestLoadConfig_FileNotFound(t *testing.T) {
+	nonExistentPath := "/tmp/non-existent-gwaihir-config-12345.yaml"
+
+	cfg, err := LoadConfig(nonExistentPath)
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
+	assert.True(t, errors.Is(err, os.ErrNotExist) || os.IsNotExist(err))
+}
+
+func TestLoadConfig_InvalidYAML(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "config-invalid-*.yaml")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	defer func() {
+		_ = os.Remove(filename)
+	}()
+
+	invalidYAML := `
+server:
+  port: 8080
+  log:
+    format: json
+    level: info
+invalid: [unclosed
+`
+
+	_, err = tmpFile.WriteString(invalidYAML)
+	assert.NoError(t, err)
+	assert.NoError(t, tmpFile.Close())
+
+	cfg, err := LoadConfig(filename)
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
+}
+
+func TestLoadConfig_EmptyFile(t *testing.T) {
+	tmpFile, err := os.CreateTemp("", "config-empty-*.yaml")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	defer func() {
+		_ = os.Remove(filename)
+	}()
+	assert.NoError(t, tmpFile.Close())
+
+	cfg, err := LoadConfig(filename)
+	// Empty file should deserialize to empty struct, not error
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+}
+
+func TestLoadConfig_ExampleConfigFile(t *testing.T) {
+	examplePath := filepath.Join("..", "..", "configs", "gwaihir.example.yaml")
+	if _, err := os.Stat(examplePath); os.IsNotExist(err) {
+		t.Skip("Example config file not found, skipping integration test")
+	}
+
+	cfg, err := LoadConfig(examplePath)
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	assert.Greater(t, cfg.Server.Port, 0)
+	assert.NotEmpty(t, cfg.Server.Log.Format)
+	assert.NotEmpty(t, cfg.Server.Log.Level)
+	assert.Len(t, cfg.Machines, 3)
 }
