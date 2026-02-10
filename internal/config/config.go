@@ -10,6 +10,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var macRegexp = regexp.MustCompile(`^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$`)
+
 // LoadConfig loads and parses the configuration from a YAML file.
 // Returns a pointer to Config if successful, or an error if the file
 // cannot be read, contains invalid YAML, or the configuration fails validation.
@@ -176,9 +178,7 @@ func validateMachine(machine MachineConfig) error {
 }
 
 func isValidMAC(mac string) bool {
-	pattern := `^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$`
-	re := regexp.MustCompile(pattern)
-	return re.MatchString(mac)
+	return macRegexp.MatchString(mac)
 }
 
 func isValidIP(ip string) bool {
