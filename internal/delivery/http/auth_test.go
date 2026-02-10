@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/josimar-silva/gwaihir/internal/config"
 )
 
 const testAPIKey = "test-secret-key-123"
@@ -179,4 +181,71 @@ func TestRouterWithAuth_ProtectedWoLEndpoint(t *testing.T) {
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("Expected status 401 for /wol without key, got %d", w.Code)
 	}
+}
+
+func TestRouterWithConfig_AuthFromConfig(t *testing.T) {
+	cfg := &config.Config{
+		Authentication: config.AuthenticationConfig{APIKey: testAPIKey},
+		Machines: []config.MachineConfig{
+			{
+				ID:        "test",
+				Name:      "Test",
+				MAC:       "AA:BB:CC:DD:EE:FF",
+				Broadcast: "192.168.1.255",
+			},
+		},
+		Observability: config.ObservabilityConfig{
+			HealthCheck: config.HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     config.MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	handler, _, _ := newHandlerForTesting(nil)
+	router := NewRouterWithConfig(handler, cfg)
+
+	// Request with valid API key should succeed
+	req := httptest.NewRequest(http.MethodGet, "/machines", nil)
+	req.Header.Set("X-API-Key", testAPIKey)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200 with valid config key, got %d", w.Code)
+	}
+}
+
+func TestRouterWithConfig_NoAuthRequired(t *testing.T) {
+	cfg := &config.Config{
+		Authentication: config.AuthenticationConfig{APIKey: ""},
+		Machines: []config.MachineConfig{
+			{
+				ID:        "test",
+				Name:      "Test",
+				MAC:       "AA:BB:CC:DD:EE:FF",
+				Broadcast: "192.168.1.255",
+			},
+		},
+		Observability: config.ObservabilityConfig{
+			HealthCheck: config.HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     config.MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	handler, _, _ := newHandlerForTesting(nil)
+	router := NewRouterWithConfig(handler, cfg)
+
+	// Protected endpoint should work without API key when not set in config
+	req := httptest.NewRequest(http.MethodGet, "/machines", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200 when no auth required in config, got %d", w.Code)
+	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

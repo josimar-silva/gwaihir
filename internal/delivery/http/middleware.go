@@ -8,6 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
+	"github.com/josimar-silva/gwaihir/internal/config"
 )
 
 type contextKey string
@@ -57,4 +59,15 @@ func getRequestID(c *gin.Context) string {
 // ContextWithRequestID adds request ID to a context.
 func ContextWithRequestID(ctx context.Context, requestID string) context.Context {
 	return context.WithValue(ctx, contextRequestIDKey, requestID)
+}
+
+// RequestLoggingMiddlewareWithConfig returns request logging middleware that respects config.
+func RequestLoggingMiddlewareWithConfig(cfg *config.Config) gin.HandlerFunc {
+	if cfg == nil {
+		return RequestLoggingMiddleware()
+	}
+
+	// For now, use default logging behavior. Config allows future optimization
+	// (e.g., skip logging for debug level, or customize for different log levels)
+	return RequestLoggingMiddleware()
 }

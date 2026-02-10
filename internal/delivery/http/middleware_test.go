@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/josimar-silva/gwaihir/internal/config"
 )
 
 func TestRequestIDMiddleware(t *testing.T) {
@@ -147,5 +149,54 @@ func TestMiddlewareChain(t *testing.T) {
 	// Verify X-Request-ID header is set
 	if w.Header().Get("X-Request-ID") == "" {
 		t.Fatal("Expected X-Request-ID header to be set")
+	}
+}
+
+func TestRequestLoggingMiddlewareWithConfig_NilConfig(t *testing.T) {
+	middleware := RequestLoggingMiddlewareWithConfig(nil)
+	if middleware == nil {
+		t.Fatal("Expected non-nil middleware")
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	w := httptest.NewRecorder()
+
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	middleware(c)
+
+	_, exists := c.Get("duration")
+	if !exists {
+		t.Fatal("Expected duration to be set in context")
+	}
+}
+
+func TestRequestLoggingMiddlewareWithConfig_WithConfig(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			Log: config.LogConfig{
+				Format: "text",
+				Level:  "debug",
+			},
+		},
+	}
+
+	middleware := RequestLoggingMiddlewareWithConfig(cfg)
+	if middleware == nil {
+		t.Fatal("Expected non-nil middleware")
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	w := httptest.NewRecorder()
+
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	middleware(c)
+
+	_, exists := c.Get("duration")
+	if !exists {
+		t.Fatal("Expected duration to be set in context")
 	}
 }
