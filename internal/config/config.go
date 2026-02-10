@@ -29,7 +29,10 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
-	// Apply environment variable overrides
+	// Apply defaults first
+	setDefaults(&cfg)
+
+	// Apply environment variable overrides (take precedence)
 	applyEnvOverrides(&cfg)
 
 	return &cfg, nil
@@ -54,6 +57,37 @@ func applyEnvOverrides(cfg *Config) {
 
 	if apiKey := os.Getenv("GWAIHIR_API_KEY"); apiKey != "" {
 		cfg.Authentication.APIKey = apiKey
+	}
+}
+
+// setDefaults applies sensible default values for optional configuration fields.
+// Defaults are only applied when values are not already set.
+func setDefaults(cfg *Config) {
+	// Server port default
+	if cfg.Server.Port == 0 {
+		cfg.Server.Port = 8080
+	}
+
+	// Log format default
+	if cfg.Server.Log.Format == "" {
+		cfg.Server.Log.Format = "text"
+	}
+
+	// Log level default
+	if cfg.Server.Log.Level == "" {
+		cfg.Server.Log.Level = "info"
+	}
+
+	// Observability defaults (enable health check and metrics by default)
+	// Only set to true if not explicitly specified (nil)
+	if cfg.Observability.HealthCheck.Enabled == nil {
+		trueVal := true
+		cfg.Observability.HealthCheck.Enabled = &trueVal
+	}
+
+	if cfg.Observability.Metrics.Enabled == nil {
+		trueVal := true
+		cfg.Observability.Metrics.Enabled = &trueVal
 	}
 }
 
@@ -100,10 +134,10 @@ type ObservabilityConfig struct {
 
 // HealthCheckConfig controls health check endpoint exposure.
 type HealthCheckConfig struct {
-	Enabled bool `yaml:"enabled"`
+	Enabled *bool `yaml:"enabled"`
 }
 
 // MetricsConfig controls metrics endpoint exposure.
 type MetricsConfig struct {
-	Enabled bool `yaml:"enabled"`
+	Enabled *bool `yaml:"enabled"`
 }
