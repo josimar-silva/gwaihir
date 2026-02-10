@@ -124,7 +124,21 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("at least one machine must be configured")
 	}
 
+	seenIDs := make(map[string]bool)
 	for i, machine := range cfg.Machines {
+		if machine.ID == "" {
+			return fmt.Errorf("machine %d: id cannot be empty", i)
+		}
+
+		if machine.Name == "" {
+			return fmt.Errorf("machine %d (%s): name cannot be empty", i, machine.ID)
+		}
+
+		if seenIDs[machine.ID] {
+			return fmt.Errorf("duplicate machine id: '%s'", machine.ID)
+		}
+		seenIDs[machine.ID] = true
+
 		if err := validateMachine(machine); err != nil {
 			return fmt.Errorf("machine %d (%s): %w", i, machine.ID, err)
 		}

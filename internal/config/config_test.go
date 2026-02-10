@@ -877,3 +877,77 @@ func TestConfig_Validate_MultipleMachines(t *testing.T) {
 	err := cfg.Validate()
 	assert.NoError(t, err)
 }
+
+func TestConfig_Validate_MachineEmptyID(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines: []MachineConfig{
+			{ID: "", Name: "Machine", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "id cannot be empty")
+}
+
+func TestConfig_Validate_MachineEmptyName(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "name cannot be empty")
+}
+
+func TestConfig_Validate_DuplicateMachineID(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "key"},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "Machine 1", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+			{ID: "m1", Name: "Machine 2", MAC: "AA:BB:CC:DD:EE:FF", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	err := cfg.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "duplicate machine id")
+	assert.Contains(t, err.Error(), "m1")
+}
