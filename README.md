@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/images/gwaihir-logo.png" height="400px" weight="400px" alt="Gwaihir logo"></p>
+<p align="center"><img src="docs/images/gwaihir-logo.png" height="300px" weight="300px" alt="Gwaihir logo"></p>
 
 <h1 align="center">Gwaihir</h1>
 <div align="center">
@@ -12,23 +12,31 @@
   </a>
   <!-- Version -->
   <a href="./">
-    <img src="https://img.shields.io/badge/Gwaihir-v0.1.0-orange.svg" alt="gwaihir" />
+    <img src="https://img.shields.io/badge/version-0.1.0-orange.svg" alt="gwaihir" />
+  </a>
+  <!-- Go Report Card -->
+  <a href="https://goreportcard.com/report/github.com/josimar-silva/gwaihir">
+    <img src="https://goreportcard.com/badge/github.com/josimar-silva/gwaihir" alt="Gwaihir go report card" />
+  </a>
+  <!-- OSSF Score Card -->
+  <a href="https://scorecard.dev/viewer/?uri=github.com/josimar-silva/gwaihir">
+    <img src="https://img.shields.io/ossf-scorecard/github.com/josimar-silva/gwaihir?label=openssf+scorecard" alt="OpenSSF Score Card">
   </a>
   <!-- Coverage -->
   <a href="https://sonarcloud.io/summary/new_code?id=josimar-silva_gwaihir">
     <img src="https://sonarcloud.io/api/project_badges/measure?project=josimar-silva_gwaihir&metric=coverage" alt="coverage" />
   </a>
-  <!-- Gondor Health -->
+  <!-- Gwaihir Health -->
   <a href="https://hello.from-gondor.com/">
-    <img src="https://status.from-gondor.com/api/v1/endpoints/external_gwaihir/health/badge.svg" alt="Gwaihir Health" />
+    <img src="https://status.from-gondor.com/api/v1/endpoints/internal_gwaihir/health/badge.svg" alt="Gwaihir Health" />
   </a>
-  <!-- Gondor uptime -->
+  <!-- Gwaihir Uptime -->
   <a href="https://hello.from-gondor.com/">
-    <img src="https://status.from-gondor.com/api/v1/endpoints/external_gwaihir/uptimes/30d/badge.svg" alt="Gwaihir Uptime" />
+    <img src="https://status.from-gondor.com/api/v1/endpoints/internal_gwaihir/uptimes/30d/badge.svg" alt="Gwaihir Uptime" />
   </a>
-  <!-- Gondor Response Time -->
+  <!-- Gwaihir Response Time -->
   <a href="https://hello.from-gondor.com/">
-    <img src="https://status.from-gondor.com/api/v1/endpoints/external_gwaihir/response-times/30d/badge.svg" alt="Gwaihir Response Time" />
+    <img src="https://status.from-gondor.com/api/v1/endpoints/internal_gwaihir/response-times/30d/badge.svg" alt="Gwaihir Response Time" />
   </a>
   <!-- CD -->
   <a href="https://github.com/josimar-silva/gwaihir/actions/workflows/cd.yaml">
@@ -46,10 +54,6 @@
   <a href="https://github.com/josimar-silva/gwaihir/actions/workflows/codeql.yaml">
     <img src="https://github.com/josimar-silva/gwaihir/actions/workflows/codeql.yaml/badge.svg" alt="CodeQL" />
   </a>
-  <!-- OSSF Score Card -->
-  <a href="https://scorecard.dev/viewer/?uri=github.com/josimar-silva/gwaihir">
-    <img src="https://img.shields.io/ossf-scorecard/github.com/josimar-silva/gwaihir?label=openssf+scorecard" alt="OpenSSF Score Card">
-  </a>
 </div>
 
 <div align="center">
@@ -58,7 +62,7 @@
 
 <div align="center">
   <sub>
-    The Lord of the Eagles, a swift and noble messenger. When commanded by any trusted caller, Gwaihir takes flight across the network to deliver the wake-up call (the WoL packet) to the target machine. This isolates the privileged operation into a tiny, single-purpose, and easily audited service.
+    The Lord of the Eagles, a swift and noble messenger. When commanded by any trusted caller, Gwaihir takes flight across the network to deliver the wake-up call (the WoL packet) to the target machine.
   </sub>
 </div>
 
@@ -110,24 +114,20 @@
 
 ## Overview
 
-Gwaihir is a production-ready microservice that provides Wake-on-LAN (WoL) capabilities via a secure REST API. It can be integrated with various systems—such as reverse proxies like [Smaug](https://github.com/josimar-silva/smaug), automation scripts, CI/CD pipelines, or any application that needs to wake up sleeping servers on demand.
+Gwaihir is a production-ready microservice that provides Wake-on-LAN (WoL) capabilities via a secure REST API. It can be integrated with various systems, such as reverse proxies like [Smaug](https://github.com/josimar-silva/smaug), automation scripts, CI/CD pipelines, or any application that needs to wake up sleeping servers on demand. This isolates the privileged operation into a tiny, single-purpose, and easily audited service.
 
 ### Key Features
 
 - **Allowlist-based Security**: Only machines explicitly configured in `machines.yaml` can receive WoL packets
-- **API Key Authentication**: Optional API key protection for all endpoints (except health/metrics)
+- **API Key Authentication**: API key protection for all endpoints (except health/metrics)
 - **Clean Architecture**: Separation of concerns with domain, use case, delivery, and repository layers
 - **Gin Framework**: Fast HTTP router with excellent middleware support
 - **Structured Logging**: JSON-formatted logs with request correlation IDs using Go's `log/slog`
 - **Prometheus Metrics**: Comprehensive metrics for monitoring and alerting
 - **Production-Grade Health Checks**: Separate liveness and readiness probes for Kubernetes
-- **Comprehensive Testing**: 90%+ test coverage across all layers with mocks
 - **Type-Safe**: Strong validation for MAC addresses and broadcast IPs
 
 ### Architecture
-
-Gwaihir is a standalone microservice that provides Wake-on-LAN capabilities to any client or service via a simple REST API. 
-It can be integrated into various systems and workflows that need to wake up sleeping servers on demand.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -167,11 +167,11 @@ It can be integrated into various systems and workflows that need to wake up sle
 - **Security First**: Runs with `hostNetwork: true` (required for broadcast packets) but uses allowlist-based security and API key authentication to prevent unauthorized access
 - **Separation of Concerns**: Isolates privileged network operations into a single, auditable service that can be tightly controlled via NetworkPolicy
 - **Observable**: Exposes Prometheus metrics and structured logs for monitoring and debugging
-- **Integration Flexibility**: Can be called by reverse proxies (like [Smaug](https://github.com/josimar-silva/smaug)), automation scripts, orchestration systems, or any HTTP client
+- **Integration Flexibility**: Can be called by reverse proxies, automation scripts, orchestration systems, or any HTTP client
 
 **Common Integration Patterns:**
 
-1. **Reverse Proxy Integration**: Services like Smaug can call Gwaihir to wake servers before forwarding requests
+1. **Reverse Proxy Integration**: Services like [Smaug](https://github.com/josimar-silva/smaug) can call Gwaihir to wake servers before forwarding requests
 2. **CI/CD Pipelines**: Automation scripts can wake test/build servers on-demand
 3. **Scheduled Tasks**: Cron jobs or Kubernetes CronJobs can wake servers at specific times
 4. **Custom Applications**: Any application that needs WoL capabilities can integrate via the simple REST API
@@ -245,7 +245,7 @@ See `configs/machines.example.yaml` for a template.
 | Variable | Type | Description | Default |
 |----------|------|-------------|---------|
 | `GWAIHIR_CONFIG` | string | Path to machines.yaml config file | `/etc/gwaihir/machines.yaml` |
-| `GWAIHIR_API_KEY` | string | API key for authentication (optional) | _(none)_ |
+| `GWAIHIR_API_KEY` | string | API key for authentication | _(none)_ |
 | `PORT` | string | HTTP server port | `8080` |
 | `GIN_MODE` | string | Gin mode: `debug` or `release` | `release` |
 | `LOG_JSON` | bool | Enable JSON logging (for production) | `true` |
@@ -329,7 +329,7 @@ curl -X POST http://localhost:8080/wol \
 
 List all machines in the allowlist.
 
-**Authentication**: Required (if API key is configured)
+**Authentication**: Required
 
 **Success Response:** `200 OK`
 ```json
@@ -353,7 +353,7 @@ List all machines in the allowlist.
 
 Get details of a specific machine.
 
-**Authentication**: Required (if API key is configured)
+**Authentication**: Required
 
 **Success Response:** `200 OK`
 ```json
