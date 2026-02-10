@@ -951,3 +951,60 @@ func TestConfig_Validate_DuplicateMachineID(t *testing.T) {
 	assert.Contains(t, err.Error(), "duplicate machine id")
 	assert.Contains(t, err.Error(), "m1")
 }
+
+func TestConfig_String_WithAuth(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 8080,
+			Log: LogConfig{
+				Format: "json",
+				Level:  "info",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: "secret"},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "Machine 1", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(true)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	result := cfg.String()
+	assert.NotEmpty(t, result)
+	assert.Contains(t, result, "8080")
+	assert.Contains(t, result, "json")
+	assert.Contains(t, result, "info")
+	assert.Contains(t, result, "enabled")
+	assert.Contains(t, result, "Machines [count=1]")
+}
+
+func TestConfig_String_NoAuth(t *testing.T) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Port: 9090,
+			Log: LogConfig{
+				Format: "text",
+				Level:  "debug",
+			},
+		},
+		Authentication: AuthenticationConfig{APIKey: ""},
+		Machines: []MachineConfig{
+			{ID: "m1", Name: "Machine 1", MAC: "00:11:22:33:44:55", Broadcast: "192.168.1.255"},
+			{ID: "m2", Name: "Machine 2", MAC: "AA:BB:CC:DD:EE:FF", Broadcast: "192.168.1.255"},
+		},
+		Observability: ObservabilityConfig{
+			HealthCheck: HealthCheckConfig{Enabled: boolPtr(false)},
+			Metrics:     MetricsConfig{Enabled: boolPtr(false)},
+		},
+	}
+
+	result := cfg.String()
+	assert.NotEmpty(t, result)
+	assert.Contains(t, result, "9090")
+	assert.Contains(t, result, "text")
+	assert.Contains(t, result, "debug")
+	assert.Contains(t, result, "disabled")
+	assert.Contains(t, result, "Machines [count=2]")
+}
