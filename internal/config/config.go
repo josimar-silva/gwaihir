@@ -31,10 +31,8 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
-	// Apply defaults first
 	setDefaults(&cfg)
 
-	// Apply environment variable overrides (take precedence)
 	applyEnvOverrides(&cfg)
 
 	return &cfg, nil
@@ -65,23 +63,18 @@ func applyEnvOverrides(cfg *Config) {
 // setDefaults applies sensible default values for optional configuration fields.
 // Defaults are only applied when values are not already set.
 func setDefaults(cfg *Config) {
-	// Server port default
 	if cfg.Server.Port == 0 {
 		cfg.Server.Port = 8080
 	}
 
-	// Log format default
 	if cfg.Server.Log.Format == "" {
 		cfg.Server.Log.Format = "text"
 	}
 
-	// Log level default
 	if cfg.Server.Log.Level == "" {
 		cfg.Server.Log.Level = "info"
 	}
 
-	// Observability defaults (enable health check and metrics by default)
-	// Only set to true if not explicitly specified (nil)
 	if cfg.Observability.HealthCheck.Enabled == nil {
 		trueVal := true
 		cfg.Observability.HealthCheck.Enabled = &trueVal
@@ -101,27 +94,22 @@ func setDefaults(cfg *Config) {
 // - authentication.api_key: must not be empty
 // - machines: must have at least 1 machine, each must be valid (MAC, broadcast IP)
 func (cfg *Config) Validate() error {
-	// Validate port
 	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
 		return fmt.Errorf("invalid server port: must be between 1 and 65535, got %d", cfg.Server.Port)
 	}
 
-	// Validate log format
 	if err := validateLogFormat(cfg.Server.Log.Format); err != nil {
 		return err
 	}
 
-	// Validate log level
 	if err := validateLogLevel(cfg.Server.Log.Level); err != nil {
 		return err
 	}
 
-	// Validate API key
 	if cfg.Authentication.APIKey == "" {
 		return fmt.Errorf("authentication.api_key is required and cannot be empty")
 	}
 
-	// Validate machines
 	if len(cfg.Machines) == 0 {
 		return fmt.Errorf("at least one machine must be configured")
 	}
@@ -135,7 +123,6 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-// validateLogFormat checks if the log format is valid.
 func validateLogFormat(format string) error {
 	validFormats := map[string]bool{"json": true, "text": true}
 	if !validFormats[format] {
@@ -144,7 +131,6 @@ func validateLogFormat(format string) error {
 	return nil
 }
 
-// validateLogLevel checks if the log level is valid.
 func validateLogLevel(level string) error {
 	validLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
 	if !validLevels[level] {
@@ -153,14 +139,11 @@ func validateLogLevel(level string) error {
 	return nil
 }
 
-// validateMachine checks if a machine configuration is valid.
 func validateMachine(machine MachineConfig) error {
-	// Validate MAC address format (XX:XX:XX:XX:XX:XX)
 	if !isValidMAC(machine.MAC) {
 		return fmt.Errorf("invalid MAC address format: '%s' (must be XX:XX:XX:XX:XX:XX)", machine.MAC)
 	}
 
-	// Validate broadcast IP
 	if !isValidIP(machine.Broadcast) {
 		return fmt.Errorf("invalid broadcast IP address: '%s' (must be a valid IPv4 address)", machine.Broadcast)
 	}
@@ -168,14 +151,12 @@ func validateMachine(machine MachineConfig) error {
 	return nil
 }
 
-// isValidMAC checks if the MAC address format is valid (XX:XX:XX:XX:XX:XX).
 func isValidMAC(mac string) bool {
 	pattern := `^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$`
 	re := regexp.MustCompile(pattern)
 	return re.MatchString(mac)
 }
 
-// isValidIP checks if the broadcast IP is a valid IPv4 address.
 func isValidIP(ip string) bool {
 	return net.ParseIP(ip) != nil
 }
