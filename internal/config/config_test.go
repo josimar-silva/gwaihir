@@ -10,6 +10,63 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const basicConfigContent = `
+server:
+  port: 8080
+  log:
+    format: text
+    level: info
+authentication:
+  api_key: "key"
+machines:
+  - id: m1
+    name: "M"
+    mac: "00:11:22:33:44:55"
+    broadcast: "192.168.1.255"
+observability:
+  health_check:
+    enabled: true
+  metrics:
+    enabled: true
+`
+
+const fileKeyConfigContent = `
+server:
+  port: 8080
+  log:
+    format: text
+    level: info
+authentication:
+  api_key: "file-key"
+machines:
+  - id: m1
+    name: "M"
+    mac: "00:11:22:33:44:55"
+    broadcast: "192.168.1.255"
+observability:
+  health_check:
+    enabled: true
+  metrics:
+    enabled: true
+`
+
+func createTempConfigFile(t *testing.T, content string) string {
+	t.Helper()
+	tmpFile, err := os.CreateTemp("", "config-*.yaml")
+	assert.NoError(t, err)
+
+	filename := tmpFile.Name()
+	_, err = tmpFile.WriteString(content)
+	assert.NoError(t, err)
+	assert.NoError(t, tmpFile.Close())
+
+	t.Cleanup(func() {
+		_ = os.Remove(filename)
+	})
+
+	return filename
+}
+
 func TestConfig_UnmarshalYAML_ValidConfig(t *testing.T) {
 	yamlData := `
 server:
@@ -170,14 +227,6 @@ observability:
 }
 
 func TestLoadConfig_ValidFile(t *testing.T) {
-	tmpFile, err := os.CreateTemp("", "config-*.yaml")
-	assert.NoError(t, err)
-
-	filename := tmpFile.Name()
-	defer func() {
-		_ = os.Remove(filename)
-	}()
-
 	configContent := `
 server:
   port: 8080
@@ -198,9 +247,7 @@ observability:
     enabled: true
 `
 
-	_, err = tmpFile.WriteString(configContent)
-	assert.NoError(t, err)
-	assert.NoError(t, tmpFile.Close())
+	filename := createTempConfigFile(t, configContent)
 
 	cfg, err := LoadConfig(filename)
 	assert.NoError(t, err)
@@ -220,14 +267,6 @@ func TestLoadConfig_FileNotFound(t *testing.T) {
 }
 
 func TestLoadConfig_InvalidYAML(t *testing.T) {
-	tmpFile, err := os.CreateTemp("", "config-invalid-*.yaml")
-	assert.NoError(t, err)
-
-	filename := tmpFile.Name()
-	defer func() {
-		_ = os.Remove(filename)
-	}()
-
 	invalidYAML := `
 server:
   port: 8080
@@ -237,9 +276,7 @@ server:
 invalid: [unclosed
 `
 
-	_, err = tmpFile.WriteString(invalidYAML)
-	assert.NoError(t, err)
-	assert.NoError(t, tmpFile.Close())
+	filename := createTempConfigFile(t, invalidYAML)
 
 	cfg, err := LoadConfig(filename)
 	assert.Error(t, err)
@@ -247,14 +284,7 @@ invalid: [unclosed
 }
 
 func TestLoadConfig_EmptyFile(t *testing.T) {
-	tmpFile, err := os.CreateTemp("", "config-empty-*.yaml")
-	assert.NoError(t, err)
-
-	filename := tmpFile.Name()
-	defer func() {
-		_ = os.Remove(filename)
-	}()
-	assert.NoError(t, tmpFile.Close())
+	filename := createTempConfigFile(t, "")
 
 	cfg, err := LoadConfig(filename)
 	// Empty file should deserialize to empty struct, not error
@@ -275,4 +305,82 @@ func TestLoadConfig_ExampleConfigFile(t *testing.T) {
 	assert.NotEmpty(t, cfg.Server.Log.Format)
 	assert.NotEmpty(t, cfg.Server.Log.Level)
 	assert.Len(t, cfg.Machines, 3)
+}
+
+func TestLoadConfig_PortEnvOverride(t *testing.T) {
+	filename := createTempConfigFile(t, basicConfigContent)
+
+	t.Setenv("GWAIHIR_PORT", "9090")
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+	assert.Equal(t, 9090, cfg.Server.Port)
+}
+
+func TestLoadConfig_LogLevelEnvOverride(t *testing.T) {
+	filename := createTempConfigFile(t, basicConfigContent)
+
+	t.Setenv("GWAIHIR_LOG_LEVEL", "debug")
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+	assert.Equal(t, "debug", cfg.Server.Log.Level)
+}
+
+func TestLoadConfig_LogFormatEnvOverride(t *testing.T) {
+	filename := createTempConfigFile(t, basicConfigContent)
+
+	t.Setenv("GWAIHIR_LOG_FORMAT", "json")
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+	assert.Equal(t, "json", cfg.Server.Log.Format)
+}
+
+func TestLoadConfig_APIKeyEnvOverride(t *testing.T) {
+	filename := createTempConfigFile(t, fileKeyConfigContent)
+
+	t.Setenv("GWAIHIR_API_KEY", "env-key")
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+	assert.Equal(t, "env-key", cfg.Authentication.APIKey)
+}
+
+func TestLoadConfig_PrecedenceEnvOverFile(t *testing.T) {
+	filename := createTempConfigFile(t, fileKeyConfigContent)
+
+	// Set multiple env vars
+	t.Setenv("GWAIHIR_PORT", "9090")
+	t.Setenv("GWAIHIR_LOG_LEVEL", "debug")
+	t.Setenv("GWAIHIR_LOG_FORMAT", "json")
+	t.Setenv("GWAIHIR_API_KEY", "env-key")
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+
+	// All env vars should override file values
+	assert.Equal(t, 9090, cfg.Server.Port)
+	assert.Equal(t, "debug", cfg.Server.Log.Level)
+	assert.Equal(t, "json", cfg.Server.Log.Format)
+	assert.Equal(t, "env-key", cfg.Authentication.APIKey)
+}
+
+func TestLoadConfig_NoEnvOverrideWhenUnset(t *testing.T) {
+	filename := createTempConfigFile(t, fileKeyConfigContent)
+
+	// Ensure env vars are NOT set
+	t.Setenv("GWAIHIR_PORT", "")
+	t.Setenv("GWAIHIR_LOG_LEVEL", "")
+	t.Setenv("GWAIHIR_LOG_FORMAT", "")
+	t.Setenv("GWAIHIR_API_KEY", "")
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+
+	// File values should be used
+	assert.Equal(t, 8080, cfg.Server.Port)
+	assert.Equal(t, "info", cfg.Server.Log.Level)
+	assert.Equal(t, "text", cfg.Server.Log.Format)
+	assert.Equal(t, "file-key", cfg.Authentication.APIKey)
 }
