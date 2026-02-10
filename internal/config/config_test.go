@@ -100,8 +100,8 @@ observability:
 	assert.Equal(t, "machine1", cfg.Machines[0].ID)
 	assert.Equal(t, "00:11:22:33:44:55", cfg.Machines[0].MAC)
 	assert.Equal(t, "192.168.1.255", cfg.Machines[0].Broadcast)
-	assert.True(t, cfg.Observability.HealthCheck.Enabled)
-	assert.True(t, cfg.Observability.Metrics.Enabled)
+	assert.Equal(t, boolPtr(true), cfg.Observability.HealthCheck.Enabled)
+	assert.Equal(t, boolPtr(true), cfg.Observability.Metrics.Enabled)
 }
 
 func TestConfig_UnmarshalYAML_AllFields(t *testing.T) {
@@ -138,8 +138,8 @@ observability:
 	assert.Equal(t, "debug", cfg.Server.Log.Level)
 	assert.Equal(t, "secret", cfg.Authentication.APIKey)
 	assert.Len(t, cfg.Machines, 2)
-	assert.False(t, cfg.Observability.HealthCheck.Enabled)
-	assert.False(t, cfg.Observability.Metrics.Enabled)
+	assert.Equal(t, boolPtr(false), cfg.Observability.HealthCheck.Enabled)
+	assert.Equal(t, boolPtr(false), cfg.Observability.Metrics.Enabled)
 }
 
 func TestConfig_UnmarshalYAML_MinimalConfig(t *testing.T) {
@@ -173,8 +173,8 @@ observability:
 	assert.NotNil(t, cfg.Authentication)
 	assert.NotNil(t, cfg.Machines)
 	assert.NotNil(t, cfg.Observability)
-	assert.NotNil(t, cfg.Observability.HealthCheck)
-	assert.NotNil(t, cfg.Observability.Metrics)
+	// Note: with pointer types, these will be non-nil after YAML parsing
+	// The defaults are applied later in LoadConfig
 }
 
 func TestConfig_UnmarshalYAML_EmptyMachinesList(t *testing.T) {
@@ -224,6 +224,11 @@ observability:
 	err := yaml.Unmarshal([]byte(yamlData), &cfg)
 	assert.NoError(t, err)
 	assert.Equal(t, "", cfg.Authentication.APIKey)
+}
+
+// Helper to compare bool pointers
+func boolPtr(v bool) *bool {
+	return &v
 }
 
 func TestLoadConfig_ValidFile(t *testing.T) {
@@ -383,4 +388,180 @@ func TestLoadConfig_NoEnvOverrideWhenUnset(t *testing.T) {
 	assert.Equal(t, "info", cfg.Server.Log.Level)
 	assert.Equal(t, "text", cfg.Server.Log.Format)
 	assert.Equal(t, "file-key", cfg.Authentication.APIKey)
+}
+
+func TestLoadConfig_DefaultPortWhenMissing(t *testing.T) {
+	minimalConfig := `
+server:
+  log:
+    format: text
+    level: info
+authentication:
+  api_key: "key"
+machines:
+  - id: m1
+    name: "M"
+    mac: "00:11:22:33:44:55"
+    broadcast: "192.168.1.255"
+observability:
+  health_check:
+    enabled: true
+  metrics:
+    enabled: true
+`
+
+	filename := createTempConfigFile(t, minimalConfig)
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+	assert.Equal(t, 8080, cfg.Server.Port)
+}
+
+func TestLoadConfig_DefaultLogFormatWhenMissing(t *testing.T) {
+	minimalConfig := `
+server:
+  port: 8080
+  log:
+    level: info
+authentication:
+  api_key: "key"
+machines:
+  - id: m1
+    name: "M"
+    mac: "00:11:22:33:44:55"
+    broadcast: "192.168.1.255"
+observability:
+  health_check:
+    enabled: true
+  metrics:
+    enabled: true
+`
+
+	filename := createTempConfigFile(t, minimalConfig)
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+	assert.Equal(t, "text", cfg.Server.Log.Format)
+}
+
+func TestLoadConfig_DefaultLogLevelWhenMissing(t *testing.T) {
+	minimalConfig := `
+server:
+  port: 8080
+  log:
+    format: text
+authentication:
+  api_key: "key"
+machines:
+  - id: m1
+    name: "M"
+    mac: "00:11:22:33:44:55"
+    broadcast: "192.168.1.255"
+observability:
+  health_check:
+    enabled: true
+  metrics:
+    enabled: true
+`
+
+	filename := createTempConfigFile(t, minimalConfig)
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+	assert.Equal(t, "info", cfg.Server.Log.Level)
+}
+
+func TestLoadConfig_DefaultObservabilityEnabled(t *testing.T) {
+	minimalConfig := `
+server:
+  port: 8080
+  log:
+    format: text
+    level: info
+authentication:
+  api_key: "key"
+machines:
+  - id: m1
+    name: "M"
+    mac: "00:11:22:33:44:55"
+    broadcast: "192.168.1.255"
+observability: {}
+`
+
+	filename := createTempConfigFile(t, minimalConfig)
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+	assert.Equal(t, boolPtr(true), cfg.Observability.HealthCheck.Enabled)
+	assert.Equal(t, boolPtr(true), cfg.Observability.Metrics.Enabled)
+}
+
+func TestLoadConfig_DefaultsNotOverridingFileValues(t *testing.T) {
+	configContent := `
+server:
+  port: 9090
+  log:
+    format: json
+    level: warn
+authentication:
+  api_key: "key"
+machines:
+  - id: m1
+    name: "M"
+    mac: "00:11:22:33:44:55"
+    broadcast: "192.168.1.255"
+observability:
+  health_check:
+    enabled: false
+  metrics:
+    enabled: false
+`
+
+	filename := createTempConfigFile(t, configContent)
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+
+	// File values should be respected, not defaults
+	assert.Equal(t, 9090, cfg.Server.Port)
+	assert.Equal(t, "json", cfg.Server.Log.Format)
+	assert.Equal(t, "warn", cfg.Server.Log.Level)
+	assert.Equal(t, boolPtr(false), cfg.Observability.HealthCheck.Enabled)
+	assert.Equal(t, boolPtr(false), cfg.Observability.Metrics.Enabled)
+}
+
+func TestLoadConfig_DefaultsNotOverridingEnvValues(t *testing.T) {
+	minimalConfig := `
+server:
+  log:
+    format: text
+    level: info
+authentication:
+  api_key: "key"
+machines:
+  - id: m1
+    name: "M"
+    mac: "00:11:22:33:44:55"
+    broadcast: "192.168.1.255"
+observability:
+  health_check:
+    enabled: true
+  metrics:
+    enabled: true
+`
+
+	filename := createTempConfigFile(t, minimalConfig)
+
+	// Set env vars that should override defaults
+	t.Setenv("GWAIHIR_PORT", "9999")
+	t.Setenv("GWAIHIR_LOG_FORMAT", "json")
+	t.Setenv("GWAIHIR_LOG_LEVEL", "debug")
+
+	cfg, err := LoadConfig(filename)
+	assert.NoError(t, err)
+
+	// Env values should take precedence
+	assert.Equal(t, 9999, cfg.Server.Port)
+	assert.Equal(t, "json", cfg.Server.Log.Format)
+	assert.Equal(t, "debug", cfg.Server.Log.Level)
 }
