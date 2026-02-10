@@ -322,6 +322,18 @@ func TestLoadConfig_PortEnvOverride(t *testing.T) {
 	assert.Equal(t, 9090, cfg.Server.Port)
 }
 
+func TestLoadConfig_InvalidPortEnvOverride(t *testing.T) {
+	filename := createTempConfigFile(t, basicConfigContent)
+
+	t.Setenv("GWAIHIR_PORT", "not-a-number")
+
+	cfg, err := LoadConfig(filename)
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
+	assert.Contains(t, err.Error(), "GWAIHIR_PORT")
+	assert.Contains(t, err.Error(), "not-a-number")
+}
+
 func TestLoadConfig_LogLevelEnvOverride(t *testing.T) {
 	filename := createTempConfigFile(t, basicConfigContent)
 
