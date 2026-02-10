@@ -4,6 +4,7 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 
+	"github.com/josimar-silva/gwaihir/internal/config"
 	"github.com/josimar-silva/gwaihir/internal/infrastructure"
 )
 
@@ -12,39 +13,55 @@ func NewRouter(handler *Handler) *gin.Engine {
 	return NewRouterWithAuth(handler, "")
 }
 
+// NewRouterWithConfig creates and configures the Gin router based on config.
+func NewRouterWithConfig(handler *Handler, cfg *config.Config) *gin.Engine {
+	return NewRouterWithAuthAndConfig(handler, cfg.Authentication.APIKey, cfg)
+}
+
 // NewRouterWithAuth creates and configures the Gin router with optional API key authentication.
 func NewRouterWithAuth(handler *Handler, apiKey string) *gin.Engine {
-	// Set Gin to release mode in production
-	// gin.SetMode(gin.ReleaseMode)
+	return NewRouterWithAuthAndConfig(handler, apiKey, nil)
+}
 
+// NewRouterWithAuthAndConfig creates and configures the Gin router with config-based endpoint registration.
+func NewRouterWithAuthAndConfig(handler *Handler, apiKey string, cfg *config.Config) *gin.Engine {
 	router := gin.Default()
 
 	// Middleware
 	router.Use(RequestIDMiddleware())
-	router.Use(RequestLoggingMiddleware())
+	router.Use(RequestLoggingMiddlewareWithConfig(cfg))
 
-	// Create health handler for enhanced health checks
+	healthEnabled := true
+	if cfg != nil && cfg.Observability.HealthCheck.Enabled != nil {
+		healthEnabled = *cfg.Observability.HealthCheck.Enabled
+	}
+
+	metricsEnabled := true
+	if cfg != nil && cfg.Observability.Metrics.Enabled != nil {
+		metricsEnabled = *cfg.Observability.Metrics.Enabled
+	}
+
 	healthHandler := NewHealthHandler(handler)
 
-	// Health and version endpoints (no auth required)
-	router.GET("/health", healthHandler.HealthCheckFull)
-	router.GET("/live", healthHandler.HealthCheckLive)
-	router.GET("/ready", healthHandler.HealthCheckReady)
+	if healthEnabled {
+		router.GET("/health", healthHandler.HealthCheckFull)
+		router.GET("/live", healthHandler.HealthCheckLive)
+		router.GET("/ready", healthHandler.HealthCheckReady)
+	}
+
+	if metricsEnabled {
+		router.GET("/metrics", gin.WrapH(infrastructure.MetricsHandler()))
+	}
+
 	router.GET("/version", handler.Version)
 
-	// Metrics endpoint (no auth required)
-	router.GET("/metrics", gin.WrapH(infrastructure.MetricsHandler()))
-
-	// Protected endpoints group (with optional API key auth)
 	protected := router.Group("")
 	if apiKey != "" {
 		protected.Use(APIKeyAuthMiddleware(apiKey))
 	}
 
-	// WoL endpoints (protected)
 	protected.POST("/wol", handler.Wake)
 
-	// Machine management endpoints (protected)
 	protected.GET("/machines", handler.ListMachines)
 	protected.GET("/machines/:id", handler.GetMachine)
 
