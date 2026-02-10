@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"gopkg.in/yaml.v3"
 )
@@ -10,6 +11,11 @@ import (
 // LoadConfig loads and parses the configuration from a YAML file.
 // Returns a pointer to Config if successful, or an error if the file
 // cannot be read or contains invalid YAML.
+// Environment variables override file values with this precedence:
+//   - GWAIHIR_PORT overrides server.port
+//   - GWAIHIR_LOG_FORMAT overrides server.log.format
+//   - GWAIHIR_LOG_LEVEL overrides server.log.level
+//   - GWAIHIR_API_KEY overrides authentication.api_key
 //
 // #nosec G304 - path is controlled by application, not user input
 func LoadConfig(path string) (*Config, error) {
@@ -23,7 +29,32 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
+	// Apply environment variable overrides
+	applyEnvOverrides(&cfg)
+
 	return &cfg, nil
+}
+
+// applyEnvOverrides applies environment variable overrides to the configuration.
+// Environment variables take precedence over file values.
+func applyEnvOverrides(cfg *Config) {
+	if port := os.Getenv("GWAIHIR_PORT"); port != "" {
+		if p, err := strconv.Atoi(port); err == nil {
+			cfg.Server.Port = p
+		}
+	}
+
+	if format := os.Getenv("GWAIHIR_LOG_FORMAT"); format != "" {
+		cfg.Server.Log.Format = format
+	}
+
+	if level := os.Getenv("GWAIHIR_LOG_LEVEL"); level != "" {
+		cfg.Server.Log.Level = level
+	}
+
+	if apiKey := os.Getenv("GWAIHIR_API_KEY"); apiKey != "" {
+		cfg.Authentication.APIKey = apiKey
+	}
 }
 
 // Config represents the complete unified configuration for Gwaihir.
