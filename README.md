@@ -12,7 +12,7 @@
   </a>
   <!-- Version -->
   <a href="./">
-    <img src="https://img.shields.io/badge/version-0.1.0-orange.svg" alt="gwaihir" />
+    <img src="https://img.shields.io/badge/gwaihir-v0.2.0-orange.svg" alt="gwaihir" />
   </a>
   <!-- Go Report Card -->
   <a href="https://goreportcard.com/report/github.com/josimar-silva/gwaihir">
