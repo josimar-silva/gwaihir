@@ -193,18 +193,32 @@ Get Gwaihir running in under 5 minutes:
 git clone https://github.com/josimar-silva/gwaihir.git
 cd gwaihir
 
-# 2. Create a minimal configuration
-cat > machines.yaml << EOF
+# 2. Create a configuration file
+cat > gwaihir.yaml << EOF
+server:
+  port: 8080
+  log:
+    format: text
+    level: info
+
+authentication:
+  api_key: ""
+
 machines:
   - id: test-server
     name: "Test Server"
     mac: "AA:BB:CC:DD:EE:FF"
     broadcast: "192.168.1.255"
+
+observability:
+  health_check:
+    enabled: true
+  metrics:
+    enabled: true
 EOF
 
 # 3. Run the service
-export GWAIHIR_CONFIG=machines.yaml
-export LOG_JSON=false
+export GWAIHIR_CONFIG=gwaihir.yaml
 go run cmd/gwaihir/main.go cmd/gwaihir/version.go
 
 # 4. Test the service (in another terminal)
@@ -221,11 +235,22 @@ curl -X POST http://localhost:8080/wol \
 
 ## Configuration
 
-### Machine Allowlist
+Gwaihir uses a unified YAML configuration file that includes server settings, authentication, machines, and observability options.
 
-Create a `machines.yaml` file with your allowed machines:
+### Configuration File
+
+Create a `gwaihir.yaml` configuration file:
 
 ```yaml
+server:
+  port: 8080
+  log:
+    format: json        # json or text
+    level: info         # debug, info, warn, error
+
+authentication:
+  api_key: "your-secret-api-key"  # Leave empty for public endpoints
+
 machines:
   - id: saruman
     name: "Saruman - AI Inference Server"
@@ -236,18 +261,27 @@ machines:
     name: "Morgoth - Transcription Server"
     mac: "11:22:33:44:55:66"
     broadcast: "192.168.1.255"
+
+observability:
+  health_check:
+    enabled: true       # Enable /health, /live, /ready endpoints
+  metrics:
+    enabled: true       # Enable /metrics endpoint
 ```
 
-See `configs/machines.example.yaml` for a template.
+See `configs/gwaihir.example.yaml` for a complete template.
 
 ### Environment Variables
 
-| Variable | Type | Description | Default |
-|----------|------|-------------|---------|
-| `GWAIHIR_CONFIG` | string | Path to machines.yaml config file | `/etc/gwaihir/machines.yaml` |
-| `GWAIHIR_API_KEY` | string | API key for authentication | _(none)_ |
-| `PORT` | string | HTTP server port | `8080` |
-| `GIN_MODE` | string | Gin mode: `debug` or `release` | `release` |
+Environment variables override configuration file values:
+
+| Variable | Type | Description | Overrides |
+|----------|------|-------------|-----------|
+| `GWAIHIR_CONFIG` | string | Path to gwaihir.yaml config file | _(none, sets config path)_ |
+| `GWAIHIR_PORT` | int | HTTP server port | `server.port` |
+| `GWAIHIR_LOG_FORMAT` | string | Log format: `json` or `text` | `server.log.format` |
+| `GWAIHIR_LOG_LEVEL` | string | Log level: `debug`, `info`, `warn`, `error` | `server.log.level` |
+| `GWAIHIR_API_KEY` | string | API key for authentication | `authentication.api_key` |
 | `LOG_JSON` | bool | Enable JSON logging (for production) | `true` |
 
 ## API Endpoints
