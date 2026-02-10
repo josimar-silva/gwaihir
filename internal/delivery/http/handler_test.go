@@ -85,7 +85,7 @@ func newHandlerForTesting(machines map[string]*domain.Machine) (*Handler, *mockR
 
 	repo := &mockRepository{machines: machines}
 	sender := &mockPacketSender{}
-	logger := infrastructure.NewLogger(false)
+	logger := infrastructure.NewLogger("text", "debug")
 	prometheus.DefaultRegisterer = prometheus.NewRegistry()
 	metrics, _ := infrastructure.NewMetrics()
 	wolUseCase := usecase.NewWoLUseCase(repo, sender, logger, metrics)

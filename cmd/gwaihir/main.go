@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -20,8 +19,15 @@ import (
 )
 
 func main() {
-	inProduction, _ := strconv.ParseBool(os.Getenv("GWAIHIR_PRODUCTION"))
-	logger := infrastructure.NewLogger(inProduction)
+	logFormat := os.Getenv("GWAIHIR_LOG_FORMAT")
+	if logFormat == "" {
+		logFormat = "text"
+	}
+	logLevel := os.Getenv("GWAIHIR_LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info"
+	}
+	logger := infrastructure.NewLogger(logFormat, logLevel)
 
 	configPath := os.Getenv("GWAIHIR_CONFIG")
 	if configPath == "" {
