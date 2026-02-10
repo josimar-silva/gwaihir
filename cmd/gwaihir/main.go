@@ -20,6 +20,18 @@ import (
 )
 
 func main() {
+	cfg := loadConfiguration()
+	logger := initializeLogger(cfg)
+	metrics := initializeMetrics(logger)
+	repo := initializeRepository(cfg, logger)
+	logMachineConfiguration(logger, metrics, repo)
+	useCase := initializeUseCase(repo, logger, metrics)
+	handler := initializeHandler(useCase, logger, metrics)
+	router := initializeRouter(handler, cfg, logger)
+	startServer(cfg, router, logger)
+}
+
+func loadConfiguration() *config.Config {
 	configPath := os.Getenv("GWAIHIR_CONFIG")
 	if configPath == "" {
 		configPath = "/etc/gwaihir/gwaihir.yaml"
@@ -31,43 +43,68 @@ func main() {
 		os.Exit(1)
 	}
 
+	return cfg
+}
+
+func initializeLogger(cfg *config.Config) *infrastructure.Logger {
 	logger := infrastructure.NewLogger(cfg.Server.Log.Format, cfg.Server.Log.Level)
+	logger.Info("Configuration loaded",
+		infrastructure.String("summary", cfg.String()),
+	)
+	return logger
+}
 
-	logger.Info("Configuration loaded", infrastructure.String("path", configPath))
-
-	if os.Getenv("GIN_MODE") == "" {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
+func initializeMetrics(logger *infrastructure.Logger) *infrastructure.Metrics {
 	metrics, err := infrastructure.NewMetrics()
 	if err != nil {
 		logger.Error("Failed to initialize metrics", infrastructure.Any("error", err))
 		os.Exit(1)
 	}
+	return metrics
+}
 
-	machineRepo, err := repository.NewInMemoryMachineRepository(cfg)
+func initializeRepository(cfg *config.Config, logger *infrastructure.Logger) *repository.InMemoryMachineRepository {
+	repo, err := repository.NewInMemoryMachineRepository(cfg)
 	if err != nil {
 		logger.Error("Failed to initialize machine repository", infrastructure.Any("error", err))
 		os.Exit(1)
 	}
+	return repo
+}
 
-	machines, _ := machineRepo.GetAll()
+func logMachineConfiguration(logger *infrastructure.Logger, metrics *infrastructure.Metrics, repo *repository.InMemoryMachineRepository) {
+	machines, _ := repo.GetAll()
 	logger.Info("Machine configuration loaded", infrastructure.Int("count", len(machines)))
 	for _, m := range machines {
 		logger.Debug("Machine registered", infrastructure.String("name", m.Name), infrastructure.String("id", m.ID))
 	}
 	metrics.ConfiguredMachines.Set(float64(len(machines)))
+}
 
+func initializeUseCase(repo *repository.InMemoryMachineRepository, logger *infrastructure.Logger, metrics *infrastructure.Metrics) *usecase.WoLUseCase {
 	packetSender := repository.NewWoLPacketSender()
-	wolUseCase := usecase.NewWoLUseCase(machineRepo, packetSender, logger, metrics)
-	handler := httpdelivery.NewHandler(wolUseCase, logger, metrics, Version, BuildTime, GitCommit)
+	return usecase.NewWoLUseCase(repo, packetSender, logger, metrics)
+}
 
-	apiKey := cfg.Authentication.APIKey
-	if apiKey == "" {
+func initializeHandler(useCase *usecase.WoLUseCase, logger *infrastructure.Logger, metrics *infrastructure.Metrics) *httpdelivery.Handler {
+	return httpdelivery.NewHandler(useCase, logger, metrics, Version, BuildTime, GitCommit)
+}
+
+func initializeRouter(handler *httpdelivery.Handler, cfg *config.Config, logger *infrastructure.Logger) *gin.Engine {
+	if cfg.Server.Log.Level == "debug" {
+		gin.SetMode(gin.DebugMode)
+	} else if os.Getenv("GIN_MODE") == "" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	if cfg.Authentication.APIKey == "" {
 		logger.Warn("No API key configured - protected endpoints will not require authentication")
 	}
-	router := httpdelivery.NewRouterWithAuth(handler, apiKey)
 
+	return httpdelivery.NewRouterWithConfig(handler, cfg)
+}
+
+func startServer(cfg *config.Config, router *gin.Engine, logger *infrastructure.Logger) {
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
 	server := &http.Server{
 		Addr:              addr,

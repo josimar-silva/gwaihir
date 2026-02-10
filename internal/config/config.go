@@ -236,3 +236,33 @@ type HealthCheckConfig struct {
 type MetricsConfig struct {
 	Enabled *bool `yaml:"enabled"`
 }
+
+// String returns a human-readable summary of the configuration.
+func (c *Config) String() string {
+	const enabled = "enabled"
+	const disabled = "disabled"
+
+	authStatus := disabled
+	if c.Authentication.APIKey != "" {
+		authStatus = enabled
+	}
+
+	healthStatus := enabled
+	if c.Observability.HealthCheck.Enabled != nil && !*c.Observability.HealthCheck.Enabled {
+		healthStatus = disabled
+	}
+
+	metricsStatus := enabled
+	if c.Observability.Metrics.Enabled != nil && !*c.Observability.Metrics.Enabled {
+		metricsStatus = disabled
+	}
+
+	return fmt.Sprintf(
+		"Server [port=%d, log_format=%s, log_level=%s] "+
+			"Auth [%s] Observability [health=%s, metrics=%s] "+
+			"Machines [count=%d]",
+		c.Server.Port, c.Server.Log.Format, c.Server.Log.Level,
+		authStatus, healthStatus, metricsStatus,
+		len(c.Machines),
+	)
+}
