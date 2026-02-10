@@ -694,7 +694,7 @@ func TestConfig_Validate_InvalidLogLevel(t *testing.T) {
 	assert.Contains(t, err.Error(), "level")
 }
 
-func TestConfig_Validate_APIKeyRequired(t *testing.T) {
+func TestConfig_Validate_APIKeyOptional(t *testing.T) {
 	cfg := &Config{
 		Server: ServerConfig{
 			Port: 8080,
@@ -714,8 +714,7 @@ func TestConfig_Validate_APIKeyRequired(t *testing.T) {
 	}
 
 	err := cfg.Validate()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "api_key")
+	assert.NoError(t, err)
 }
 
 func TestConfig_Validate_MachinesRequired(t *testing.T) {

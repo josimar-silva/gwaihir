@@ -98,7 +98,7 @@ func setDefaults(cfg *Config) {
 // - server.port: must be in range 1-65535
 // - server.log.format: must be "json" or "text"
 // - server.log.level: must be "debug", "info", "warn", or "error"
-// - authentication.api_key: must not be empty
+// - authentication.api_key: optional (empty key means public endpoints)
 // - machines: must have at least 1 machine, each must be valid (MAC, broadcast IP)
 func (cfg *Config) Validate() error {
 	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
@@ -111,10 +111,6 @@ func (cfg *Config) Validate() error {
 
 	if err := validateLogLevel(cfg.Server.Log.Level); err != nil {
 		return err
-	}
-
-	if cfg.Authentication.APIKey == "" {
-		return fmt.Errorf("authentication.api_key is required and cannot be empty")
 	}
 
 	if len(cfg.Machines) == 0 {
@@ -165,7 +161,8 @@ func isValidMAC(mac string) bool {
 }
 
 func isValidIP(ip string) bool {
-	return net.ParseIP(ip) != nil
+	parsedIp := net.ParseIP(ip)
+	return parsedIp != nil && parsedIp.To4() != nil
 }
 
 // Config represents the complete unified configuration for Gwaihir.

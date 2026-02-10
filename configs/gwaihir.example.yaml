@@ -17,10 +17,12 @@ server:
     level: info
 
 # Authentication configuration (optional)
-# If omitted, all endpoints are public (no authentication required)
+# Omit or leave empty for public endpoints (no authentication required)
+# Set api_key to require X-API-Key authentication header on protected endpoints
 authentication:
-  # API key for X-API-Key authentication header
+  # API key for X-API-Key authentication header (optional)
   # Can be overridden by GWAIHIR_API_KEY environment variable
+  # Leave empty or omit for public access
   api_key: "your-secret-api-key-here"
 
 # Machines that can receive Wake-on-LAN packets
