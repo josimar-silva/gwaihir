@@ -12,12 +12,15 @@ import (
 
 // LoadConfig loads and parses the configuration from a YAML file.
 // Returns a pointer to Config if successful, or an error if the file
-// cannot be read or contains invalid YAML.
+// cannot be read, contains invalid YAML, or the configuration fails validation.
 // Environment variables override file values with this precedence:
 //   - GWAIHIR_PORT overrides server.port
 //   - GWAIHIR_LOG_FORMAT overrides server.log.format
 //   - GWAIHIR_LOG_LEVEL overrides server.log.level
 //   - GWAIHIR_API_KEY overrides authentication.api_key
+//
+// The configuration is validated after applying defaults and environment overrides.
+// Returns (*Config, nil) only if the entire configuration is valid.
 //
 // #nosec G304 - path is controlled by application, not user input
 func LoadConfig(path string) (*Config, error) {
@@ -34,6 +37,10 @@ func LoadConfig(path string) (*Config, error) {
 	setDefaults(&cfg)
 
 	applyEnvOverrides(&cfg)
+
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
 
 	return &cfg, nil
 }
