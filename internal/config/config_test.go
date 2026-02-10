@@ -292,9 +292,9 @@ func TestLoadConfig_EmptyFile(t *testing.T) {
 	filename := createTempConfigFile(t, "")
 
 	cfg, err := LoadConfig(filename)
-	// Empty file should deserialize to empty struct, not error
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
+	assert.Error(t, err)
+	assert.Nil(t, cfg)
+	assert.Contains(t, err.Error(), "invalid configuration")
 }
 
 func TestLoadConfig_ExampleConfigFile(t *testing.T) {
