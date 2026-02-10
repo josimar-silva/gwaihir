@@ -20,18 +20,43 @@ import (
 )
 
 func main() {
-	cfg := loadConfiguration()
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Application failed: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	cfg, err := loadConfiguration()
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
 	logger := initializeLogger(cfg)
-	metrics := initializeMetrics(logger)
-	repo := initializeRepository(cfg, logger)
+
+	metrics, err := initializeMetrics(logger)
+	if err != nil {
+		return fmt.Errorf("failed to initialize metrics: %w", err)
+	}
+
+	repo, err := initializeRepository(cfg, logger)
+	if err != nil {
+		return fmt.Errorf("failed to initialize repository: %w", err)
+	}
+
 	logMachineConfiguration(logger, metrics, repo)
 	useCase := initializeUseCase(repo, logger, metrics)
 	handler := initializeHandler(useCase, logger, metrics)
 	router := initializeRouter(handler, cfg, logger)
-	startServer(cfg, router, logger)
+
+	if err := startServer(cfg, router, logger); err != nil {
+		return fmt.Errorf("server error: %w", err)
+	}
+
+	return nil
 }
 
-func loadConfiguration() *config.Config {
+func loadConfiguration() (*config.Config, error) {
 	configPath := os.Getenv("GWAIHIR_CONFIG")
 	if configPath == "" {
 		configPath = "/etc/gwaihir/gwaihir.yaml"
@@ -39,11 +64,10 @@ func loadConfiguration() *config.Config {
 
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("failed to load config from %s: %w", configPath, err)
 	}
 
-	return cfg
+	return cfg, nil
 }
 
 func initializeLogger(cfg *config.Config) *infrastructure.Logger {
@@ -54,22 +78,22 @@ func initializeLogger(cfg *config.Config) *infrastructure.Logger {
 	return logger
 }
 
-func initializeMetrics(logger *infrastructure.Logger) *infrastructure.Metrics {
+func initializeMetrics(logger *infrastructure.Logger) (*infrastructure.Metrics, error) {
 	metrics, err := infrastructure.NewMetrics()
 	if err != nil {
 		logger.Error("Failed to initialize metrics", infrastructure.Any("error", err))
-		os.Exit(1)
+		return nil, fmt.Errorf("metrics initialization failed: %w", err)
 	}
-	return metrics
+	return metrics, nil
 }
 
-func initializeRepository(cfg *config.Config, logger *infrastructure.Logger) *repository.InMemoryMachineRepository {
+func initializeRepository(cfg *config.Config, logger *infrastructure.Logger) (*repository.InMemoryMachineRepository, error) {
 	repo, err := repository.NewInMemoryMachineRepository(cfg)
 	if err != nil {
 		logger.Error("Failed to initialize machine repository", infrastructure.Any("error", err))
-		os.Exit(1)
+		return nil, fmt.Errorf("repository initialization failed: %w", err)
 	}
-	return repo
+	return repo, nil
 }
 
 func logMachineConfiguration(logger *infrastructure.Logger, metrics *infrastructure.Metrics, repo *repository.InMemoryMachineRepository) {
@@ -104,7 +128,7 @@ func initializeRouter(handler *httpdelivery.Handler, cfg *config.Config, logger 
 	return httpdelivery.NewRouterWithConfig(handler, cfg)
 }
 
-func startServer(cfg *config.Config, router *gin.Engine, logger *infrastructure.Logger) {
+func startServer(cfg *config.Config, router *gin.Engine, logger *infrastructure.Logger) error {
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
 	server := &http.Server{
 		Addr:              addr,
@@ -137,8 +161,9 @@ func startServer(cfg *config.Config, router *gin.Engine, logger *infrastructure.
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Error("Server listen error", infrastructure.Any("error", err))
-		os.Exit(1)
+		return fmt.Errorf("server listen failed: %w", err)
 	}
 
 	logger.Info("Server stopped gracefully")
+	return nil
 }
