@@ -1,5 +1,4 @@
-// Package main implements Gwaihir, the WoL messenger service.
-// Gwaihir is a minimal HTTP API that sends Wake-on-LAN packets on command from Smaug.
+// Gwaihir is a minimal HTTP API that sends Wake-on-LAN packets on command to other servers in the network.
 package main
 
 import (
