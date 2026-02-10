@@ -67,7 +67,7 @@ Delivery → Use Case → Domain ← Repository
 ### Naming Conventions
 
 - **Interfaces:** Descriptive names (e.g., `MachineRepository`, `WoLUseCase`)
-- **Implementations:** Include implementation detail (e.g., `YAMLMachineRepository`)
+- **Implementations:** Include implementation detail (e.g., `InMemoryMachineRepository`)
 - **Methods:** Clear action verbs (e.g., `SendWoLPacket`, `GetMachine`, `ListMachines`)
 - **Variables:** Descriptive, avoid single letters except in very short scopes
 - **Errors:** Use domain-specific errors defined in `domain/errors.go`
@@ -309,24 +309,43 @@ just run
 
 ## Configuration
 
-### Environment Variables
+Gwaihir uses a unified YAML configuration file (gwaihir.yaml) that includes all settings: server, authentication, machines, and observability.
 
-```bash
-GWAIHIR_CONFIG=/etc/gwaihir/machines.yaml  # Config file path
-GWAIHIR_API_KEY=secret-key                 # Optional API key
-PORT=8080                                  # HTTP server port
-GIN_MODE=release                           # Gin mode (debug/release)
-LOG_JSON=true                              # Enable JSON logging
-```
-
-### machines.yaml Format
+### Configuration File Format
 
 ```yaml
+server:
+  port: 8080
+  log:
+    format: json          # json or text
+    level: info           # debug, info, warn, error
+
+authentication:
+  api_key: "secret-key"  # Optional: leave empty for public endpoints
+
 machines:
-  - id: machine-id          # Required: unique identifier
-    name: "Display Name"    # Required: human-readable name
-    mac: "AA:BB:CC:DD:EE:FF" # Required: MAC address
-    broadcast: "192.168.1.255" # Required: broadcast IP
+  - id: machine-id            # Required: unique identifier
+    name: "Display Name"      # Required: human-readable name
+    mac: "AA:BB:CC:DD:EE:FF"  # Required: MAC address (XX:XX:XX:XX:XX:XX format)
+    broadcast: "192.168.1.255" # Required: broadcast IP for network
+
+observability:
+  health_check:
+    enabled: true             # Enable /health, /live, /ready endpoints
+  metrics:
+    enabled: true             # Enable /metrics endpoint
+```
+
+### Environment Variable Overrides
+
+Environment variables override configuration file values:
+
+```bash
+GWAIHIR_CONFIG=/etc/gwaihir/gwaihir.yaml   # Config file path (default: /etc/gwaihir/gwaihir.yaml)
+GWAIHIR_PORT=8080                          # Overrides server.port
+GWAIHIR_LOG_FORMAT=json                    # Overrides server.log.format (json|text)
+GWAIHIR_LOG_LEVEL=info                     # Overrides server.log.level (debug|info|warn|error)
+GWAIHIR_API_KEY=secret-key                 # Overrides authentication.api_key
 ```
 
 ## Security Considerations
