@@ -282,7 +282,6 @@ Environment variables override configuration file values:
 | `GWAIHIR_LOG_FORMAT` | string | Log format: `json` or `text` | `server.log.format` |
 | `GWAIHIR_LOG_LEVEL` | string | Log level: `debug`, `info`, `warn`, `error` | `server.log.level` |
 | `GWAIHIR_API_KEY` | string | API key for authentication | `authentication.api_key` |
-| `LOG_JSON` | bool | Enable JSON logging (for production) | `true` |
 
 ## API Endpoints
 
