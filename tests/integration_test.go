@@ -17,6 +17,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/josimar-silva/gwaihir/internal/config"
 	httpdelivery "github.com/josimar-silva/gwaihir/internal/delivery/http"
 	"github.com/josimar-silva/gwaihir/internal/infrastructure"
 	"github.com/josimar-silva/gwaihir/internal/repository"
@@ -76,7 +77,13 @@ func findProjectRoot(t *testing.T) string {
 func startServer(t *testing.T, port string, configPath string) (string, func()) {
 	logger := infrastructure.NewLogger("text", "debug")
 
-	machineRepo, err := repository.NewYAMLMachineRepository(configPath)
+	// Load and validate configuration
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	machineRepo, err := repository.NewYAMLMachineRepository(cfg)
 	if err != nil {
 		t.Fatalf("Failed to initialize machine repository: %v", err)
 	}
@@ -309,7 +316,12 @@ func TestIntegration_APIKeyAuthentication(t *testing.T) {
 	logger := infrastructure.NewLogger("text", "debug")
 
 	configPath := getConfigPath(t)
-	machineRepo, err := repository.NewYAMLMachineRepository(configPath)
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	machineRepo, err := repository.NewYAMLMachineRepository(cfg)
 	if err != nil {
 		t.Fatalf("Failed to initialize machine repository: %v", err)
 	}

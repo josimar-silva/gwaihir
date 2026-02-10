@@ -3,49 +3,44 @@ package repository
 
 import (
 	"fmt"
-	"os"
 	"sync"
 
-	"gopkg.in/yaml.v3"
-
+	"github.com/josimar-silva/gwaihir/internal/config"
 	"github.com/josimar-silva/gwaihir/internal/domain"
 	"github.com/josimar-silva/gwaihir/internal/infrastructure"
 )
 
-// Config represents the YAML configuration file structure.
-type Config struct {
-	Machines []domain.Machine `yaml:"machines"`
-}
-
-// YAMLMachineRepository implements MachineRepository using a YAML file.
+// YAMLMachineRepository implements MachineRepository using configuration.
 type YAMLMachineRepository struct {
 	machines map[string]*domain.Machine
 	mu       sync.RWMutex
 }
 
-// NewYAMLMachineRepository creates a new YAML-based machine repository.
-func NewYAMLMachineRepository(configPath string) (*YAMLMachineRepository, error) {
-	// #nosec G304 - configPath is provided by the application configuration, not user input
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("failed to parse config file: %w", err)
-	}
-
-	// Validate and index machines
+// NewYAMLMachineRepository creates a new machine repository from config.
+func NewYAMLMachineRepository(cfg *config.Config) (*YAMLMachineRepository, error) {
+	// Build and validate machines from config
 	machines := make(map[string]*domain.Machine)
-	for i := range config.Machines {
-		machine := &config.Machines[i]
+	for i := range cfg.Machines {
+		machineConfig := &cfg.Machines[i]
+
+		// Convert config.MachineConfig to domain.Machine
+		machine := &domain.Machine{
+			ID:        machineConfig.ID,
+			Name:      machineConfig.Name,
+			MAC:       machineConfig.MAC,
+			Broadcast: machineConfig.Broadcast,
+		}
+
+		// Validate using domain validation
 		if err := machine.Validate(); err != nil {
 			return nil, fmt.Errorf("invalid machine %s: %w", machine.ID, err)
 		}
+
+		// Check for duplicates
 		if _, exists := machines[machine.ID]; exists {
 			return nil, fmt.Errorf("duplicate machine ID: %s", machine.ID)
 		}
+
 		machines[machine.ID] = machine
 	}
 

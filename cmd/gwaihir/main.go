@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/josimar-silva/gwaihir/internal/config"
 	httpdelivery "github.com/josimar-silva/gwaihir/internal/delivery/http"
 	"github.com/josimar-silva/gwaihir/internal/infrastructure"
 	"github.com/josimar-silva/gwaihir/internal/repository"
@@ -19,25 +20,20 @@ import (
 )
 
 func main() {
-	logFormat := os.Getenv("GWAIHIR_LOG_FORMAT")
-	if logFormat == "" {
-		logFormat = "text"
-	}
-	logLevel := os.Getenv("GWAIHIR_LOG_LEVEL")
-	if logLevel == "" {
-		logLevel = "info"
-	}
-	logger := infrastructure.NewLogger(logFormat, logLevel)
-
 	configPath := os.Getenv("GWAIHIR_CONFIG")
 	if configPath == "" {
-		configPath = "/etc/gwaihir/machines.yaml"
+		configPath = "/etc/gwaihir/gwaihir.yaml"
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
+		os.Exit(1)
 	}
+
+	logger := infrastructure.NewLogger(cfg.Server.Log.Format, cfg.Server.Log.Level)
+
+	logger.Info("Configuration loaded", infrastructure.String("path", configPath))
 
 	if os.Getenv("GIN_MODE") == "" {
 		gin.SetMode(gin.ReleaseMode)
@@ -49,8 +45,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("Loading machine configuration", infrastructure.String("path", configPath))
-	machineRepo, err := repository.NewYAMLMachineRepository(configPath)
+	machineRepo, err := repository.NewYAMLMachineRepository(cfg)
 	if err != nil {
 		logger.Error("Failed to initialize machine repository", infrastructure.Any("error", err))
 		os.Exit(1)
@@ -67,13 +62,13 @@ func main() {
 	wolUseCase := usecase.NewWoLUseCase(machineRepo, packetSender, logger, metrics)
 	handler := httpdelivery.NewHandler(wolUseCase, logger, metrics, Version, BuildTime, GitCommit)
 
-	apiKey := os.Getenv("GWAIHIR_API_KEY")
+	apiKey := cfg.Authentication.APIKey
 	if apiKey == "" {
-		logger.Warn("No API key configured (GWAIHIR_API_KEY not set) - protected endpoints will not require authentication")
+		logger.Warn("No API key configured - protected endpoints will not require authentication")
 	}
 	router := httpdelivery.NewRouterWithAuth(handler, apiKey)
 
-	addr := fmt.Sprintf(":%s", port)
+	addr := fmt.Sprintf(":%d", cfg.Server.Port)
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           router,

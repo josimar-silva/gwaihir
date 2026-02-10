@@ -1,32 +1,35 @@
 package repository
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
+
+	"github.com/josimar-silva/gwaihir/internal/config"
 )
 
-func TestNewYAMLMachineRepository(t *testing.T) {
-	// Create a temporary config file
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "machines.yaml")
-
-	validConfig := `machines:
-  - id: server1
-    name: Test Server 1
-    mac: "AA:BB:CC:DD:EE:FF"
-    broadcast: "192.168.1.255"
-  - id: server2
-    name: Test Server 2
-    mac: "11:22:33:44:55:66"
-    broadcast: "192.168.1.255"
-`
-
-	if err := os.WriteFile(configPath, []byte(validConfig), 0o600); err != nil {
-		t.Fatal(err)
+// Test 3.1.1: NewYAMLMachineRepository accepts config struct
+func TestNewYAMLMachineRepository_WithConfig(t *testing.T) {
+	// Arrange
+	cfg := &config.Config{
+		Machines: []config.MachineConfig{
+			{
+				ID:        "server1",
+				Name:      "Test Server 1",
+				MAC:       "AA:BB:CC:DD:EE:FF",
+				Broadcast: "192.168.1.255",
+			},
+			{
+				ID:        "server2",
+				Name:      "Test Server 2",
+				MAC:       "11:22:33:44:55:66",
+				Broadcast: "192.168.1.255",
+			},
+		},
 	}
 
-	repo, err := NewYAMLMachineRepository(configPath)
+	// Act
+	repo, err := NewYAMLMachineRepository(cfg)
+
+	// Assert
 	if err != nil {
 		t.Fatalf("NewYAMLMachineRepository() error = %v", err)
 	}
@@ -40,54 +43,108 @@ func TestNewYAMLMachineRepository(t *testing.T) {
 	}
 }
 
-func TestNewYAMLMachineRepository_InvalidFile(t *testing.T) {
-	_, err := NewYAMLMachineRepository("/nonexistent/path")
-	if err == nil {
-		t.Error("Expected error for nonexistent file")
+// Test 3.1.2: Machines loaded from config.Machines array
+func TestNewYAMLMachineRepository_LoadsFromConfig(t *testing.T) {
+	// Arrange
+	cfg := &config.Config{
+		Machines: []config.MachineConfig{
+			{
+				ID:        "machine1",
+				Name:      "Machine One",
+				MAC:       "AA:BB:CC:DD:EE:FF",
+				Broadcast: "192.168.1.255",
+			},
+		},
 	}
-}
 
-func TestNewYAMLMachineRepository_DuplicateID(t *testing.T) {
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "machines.yaml")
+	// Act
+	repo, err := NewYAMLMachineRepository(cfg)
 
-	duplicateConfig := `machines:
-  - id: server1
-    name: Test Server 1
-    mac: "AA:BB:CC:DD:EE:FF"
-    broadcast: "192.168.1.255"
-  - id: server1
-    name: Test Server 2
-    mac: "11:22:33:44:55:66"
-    broadcast: "192.168.1.255"
-`
-
-	if err := os.WriteFile(configPath, []byte(duplicateConfig), 0o600); err != nil {
+	// Assert
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err := NewYAMLMachineRepository(configPath)
+	machine, err := repo.GetByID("machine1")
+	if err != nil {
+		t.Fatalf("GetByID() error = %v", err)
+	}
+
+	if machine.ID != "machine1" {
+		t.Errorf("Expected machine ID 'machine1', got '%s'", machine.ID)
+	}
+	if machine.Name != "Machine One" {
+		t.Errorf("Expected name 'Machine One', got '%s'", machine.Name)
+	}
+}
+
+// Test 3.1.3: Machines validated using domain.Machine
+func TestNewYAMLMachineRepository_ValidatesMachines(t *testing.T) {
+	// Arrange: config with invalid machine (bad MAC)
+	cfg := &config.Config{
+		Machines: []config.MachineConfig{
+			{
+				ID:        "server1",
+				Name:      "Test Server",
+				MAC:       "INVALID",
+				Broadcast: "192.168.1.255",
+			},
+		},
+	}
+
+	// Act
+	_, err := NewYAMLMachineRepository(cfg)
+
+	// Assert
+	if err == nil {
+		t.Error("Expected error for invalid machine")
+	}
+}
+
+// Test 3.1.4: Error handling for duplicate IDs
+func TestNewYAMLMachineRepository_DuplicateID(t *testing.T) {
+	// Arrange
+	cfg := &config.Config{
+		Machines: []config.MachineConfig{
+			{
+				ID:        "server1",
+				Name:      "Server One",
+				MAC:       "AA:BB:CC:DD:EE:FF",
+				Broadcast: "192.168.1.255",
+			},
+			{
+				ID:        "server1",
+				Name:      "Server Two",
+				MAC:       "11:22:33:44:55:66",
+				Broadcast: "192.168.1.255",
+			},
+		},
+	}
+
+	// Act
+	_, err := NewYAMLMachineRepository(cfg)
+
+	// Assert
 	if err == nil {
 		t.Error("Expected error for duplicate machine ID")
 	}
 }
 
+// Test 3.1.5: GetByID works with config machines
 func TestYAMLMachineRepository_GetByID(t *testing.T) {
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "machines.yaml")
-
-	config := `machines:
-  - id: server1
-    name: Test Server
-    mac: "AA:BB:CC:DD:EE:FF"
-    broadcast: "192.168.1.255"
-`
-
-	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
-		t.Fatal(err)
+	// Arrange
+	cfg := &config.Config{
+		Machines: []config.MachineConfig{
+			{
+				ID:        "server1",
+				Name:      "Test Server",
+				MAC:       "AA:BB:CC:DD:EE:FF",
+				Broadcast: "192.168.1.255",
+			},
+		},
 	}
 
-	repo, err := NewYAMLMachineRepository(configPath)
+	repo, err := NewYAMLMachineRepository(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,31 +182,35 @@ func TestYAMLMachineRepository_GetByID(t *testing.T) {
 	}
 }
 
+// Test 3.1.6: GetAll works with config machines
 func TestYAMLMachineRepository_GetAll(t *testing.T) {
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "machines.yaml")
-
-	config := `machines:
-  - id: server1
-    name: Test Server 1
-    mac: "AA:BB:CC:DD:EE:FF"
-    broadcast: "192.168.1.255"
-  - id: server2
-    name: Test Server 2
-    mac: "11:22:33:44:55:66"
-    broadcast: "192.168.1.255"
-`
-
-	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
-		t.Fatal(err)
+	// Arrange
+	cfg := &config.Config{
+		Machines: []config.MachineConfig{
+			{
+				ID:        "server1",
+				Name:      "Test Server 1",
+				MAC:       "AA:BB:CC:DD:EE:FF",
+				Broadcast: "192.168.1.255",
+			},
+			{
+				ID:        "server2",
+				Name:      "Test Server 2",
+				MAC:       "11:22:33:44:55:66",
+				Broadcast: "192.168.1.255",
+			},
+		},
 	}
 
-	repo, err := NewYAMLMachineRepository(configPath)
+	repo, err := NewYAMLMachineRepository(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// Act
 	machines, err := repo.GetAll()
+
+	// Assert
 	if err != nil {
 		t.Errorf("GetAll() error = %v", err)
 	}
@@ -159,22 +220,21 @@ func TestYAMLMachineRepository_GetAll(t *testing.T) {
 	}
 }
 
+// Test 3.1.7: Exists works with config machines
 func TestYAMLMachineRepository_Exists(t *testing.T) {
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "machines.yaml")
-
-	config := `machines:
-  - id: server1
-    name: Test Server
-    mac: "AA:BB:CC:DD:EE:FF"
-    broadcast: "192.168.1.255"
-`
-
-	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
-		t.Fatal(err)
+	// Arrange
+	cfg := &config.Config{
+		Machines: []config.MachineConfig{
+			{
+				ID:        "server1",
+				Name:      "Test Server",
+				MAC:       "AA:BB:CC:DD:EE:FF",
+				Broadcast: "192.168.1.255",
+			},
+		},
 	}
 
-	repo, err := NewYAMLMachineRepository(configPath)
+	repo, err := NewYAMLMachineRepository(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
