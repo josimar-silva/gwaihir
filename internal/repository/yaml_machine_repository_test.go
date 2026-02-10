@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/josimar-silva/gwaihir/internal/config"
@@ -262,5 +264,225 @@ func TestYAMLMachineRepository_Exists(t *testing.T) {
 				t.Errorf("Exists() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+// ============================================================================
+// Integration Tests: Repository with Example Config
+// ============================================================================
+
+// Test 3.2.1: Load example config file and create repository
+func TestYAMLMachineRepository_IntegrationWithExampleConfig(t *testing.T) {
+	// Arrange
+	projectRoot := findProjectRoot(t)
+	exampleConfigPath := filepath.Join(projectRoot, "configs", "gwaihir.example.yaml")
+
+	// Act
+	cfg, err := config.LoadConfig(exampleConfigPath)
+	if err != nil {
+		t.Fatalf("Failed to load example config: %v", err)
+	}
+
+	repo, err := NewYAMLMachineRepository(cfg)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Failed to create repository from config: %v", err)
+	}
+
+	if repo == nil {
+		t.Fatal("Expected non-nil repository")
+	}
+
+	// Verify machines loaded from config
+	machines, err := repo.GetAll()
+	if err != nil {
+		t.Fatalf("GetAll() error = %v", err)
+	}
+
+	if len(machines) != 3 {
+		t.Errorf("Expected 3 machines from example config, got %d", len(machines))
+	}
+}
+
+// Test 3.2.2: Verify all machines from example config are valid
+func TestYAMLMachineRepository_IntegrationExampleMachinesValid(t *testing.T) {
+	// Arrange
+	projectRoot := findProjectRoot(t)
+	exampleConfigPath := filepath.Join(projectRoot, "configs", "gwaihir.example.yaml")
+
+	cfg, err := config.LoadConfig(exampleConfigPath)
+	if err != nil {
+		t.Fatalf("Failed to load example config: %v", err)
+	}
+
+	// Act
+	repo, err := NewYAMLMachineRepository(cfg)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Failed to create repository: %v", err)
+	}
+
+	// Each machine should pass domain validation
+	expectedMachines := []string{"saruman", "gandalf", "radagast"}
+	for _, machineID := range expectedMachines {
+		machine, err := repo.GetByID(machineID)
+		if err != nil {
+			t.Errorf("GetByID(%s) error = %v", machineID, err)
+			continue
+		}
+
+		if machine == nil {
+			t.Errorf("Expected machine %s to be found", machineID)
+			continue
+		}
+
+		if machine.ID != machineID {
+			t.Errorf("Expected machine ID %s, got %s", machineID, machine.ID)
+		}
+
+		if machine.Name == "" {
+			t.Errorf("Machine %s: name should not be empty", machineID)
+		}
+
+		if machine.MAC == "" {
+			t.Errorf("Machine %s: MAC should not be empty", machineID)
+		}
+
+		if machine.Broadcast == "" {
+			t.Errorf("Machine %s: broadcast should not be empty", machineID)
+		}
+	}
+}
+
+// Test 3.2.3: GetByID with example config machines
+func TestYAMLMachineRepository_IntegrationGetByIDWithExampleConfig(t *testing.T) {
+	// Arrange
+	projectRoot := findProjectRoot(t)
+	exampleConfigPath := filepath.Join(projectRoot, "configs", "gwaihir.example.yaml")
+
+	cfg, err := config.LoadConfig(exampleConfigPath)
+	if err != nil {
+		t.Fatalf("Failed to load example config: %v", err)
+	}
+
+	repo, err := NewYAMLMachineRepository(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create repository: %v", err)
+	}
+
+	tests := []struct {
+		name         string
+		machineID    string
+		shouldFind   bool
+		expectedName string
+	}{
+		{
+			name:         "existing machine: saruman",
+			machineID:    "saruman",
+			shouldFind:   true,
+			expectedName: "Development Server",
+		},
+		{
+			name:         "existing machine: gandalf",
+			machineID:    "gandalf",
+			shouldFind:   true,
+			expectedName: "Production Server",
+		},
+		{
+			name:         "existing machine: radagast",
+			machineID:    "radagast",
+			shouldFind:   true,
+			expectedName: "Backup Server",
+		},
+		{
+			name:       "non-existing machine",
+			machineID:  "nonexistent",
+			shouldFind: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			machine, err := repo.GetByID(tt.machineID)
+
+			if tt.shouldFind {
+				if err != nil {
+					t.Errorf("GetByID() error = %v", err)
+				}
+				if machine == nil {
+					t.Error("Expected non-nil machine")
+					return
+				}
+				if machine.Name != tt.expectedName {
+					t.Errorf("Expected name %q, got %q", tt.expectedName, machine.Name)
+				}
+			} else if err == nil {
+				t.Error("Expected error for non-existing machine")
+			}
+		})
+	}
+}
+
+// Test 3.2.4: GetAll with example config
+func TestYAMLMachineRepository_IntegrationGetAllWithExampleConfig(t *testing.T) {
+	// Arrange
+	projectRoot := findProjectRoot(t)
+	exampleConfigPath := filepath.Join(projectRoot, "configs", "gwaihir.example.yaml")
+
+	cfg, err := config.LoadConfig(exampleConfigPath)
+	if err != nil {
+		t.Fatalf("Failed to load example config: %v", err)
+	}
+
+	repo, err := NewYAMLMachineRepository(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create repository: %v", err)
+	}
+
+	// Act
+	machines, err := repo.GetAll()
+
+	// Assert
+	if err != nil {
+		t.Errorf("GetAll() error = %v", err)
+	}
+
+	if len(machines) != 3 {
+		t.Errorf("Expected 3 machines, got %d", len(machines))
+	}
+
+	// Verify all expected machines are present
+	machineMap := make(map[string]bool)
+	for _, m := range machines {
+		machineMap[m.ID] = true
+	}
+
+	expectedIDs := []string{"saruman", "gandalf", "radagast"}
+	for _, expectedID := range expectedIDs {
+		if !machineMap[expectedID] {
+			t.Errorf("Expected machine %s not found in GetAll()", expectedID)
+		}
+	}
+}
+
+// Helper function: findProjectRoot walks up the directory tree to find go.mod
+func findProjectRoot(t *testing.T) string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get current working directory: %v", err)
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(cwd, "go.mod")); err == nil {
+			return cwd
+		}
+
+		parent := filepath.Dir(cwd)
+		if parent == cwd {
+			t.Fatalf("Could not find project root (go.mod). Current directory: %s", cwd)
+		}
+		cwd = parent
 	}
 }
