@@ -1,0 +1,33 @@
+services:
+  gwaihir:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+    container_name: gwaihir
+    ports:
+      - "9600:8080"
+    volumes:
+      # Mount the example configuration file
+      # Copy configs/gwaihir.example.yaml to configs/gwaihir.yaml and customize it
+      - ./configs/gwaihir.example.yaml:/etc/gwaihir/gwaihir.yaml:ro
+    environment:
+      # Override API key via environment variable if needed
+      # - GWAIHIR_API_KEY=your-secret-key
+      - GWAIHIR_CONFIG=/etc/gwaihir/gwaihir.yaml
+    restart: unless-stopped
+    networks:
+      - gwaihir-network
+    # Grant NET_RAW capability required for sending raw network packets (WoL)
+    cap_add:
+      - NET_RAW
+    # Use host network mode if you need to broadcast to the local network
+    # Uncomment the line below and comment out 'ports' and 'networks' sections
+    # network_mode: host
+
+networks:
+  gwaihir-network:
+    driver: bridge
