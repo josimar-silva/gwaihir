@@ -45,7 +45,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	machineRepo, err := repository.NewYAMLMachineRepository(cfg)
+	machineRepo, err := repository.NewInMemoryMachineRepository(cfg)
 	if err != nil {
 		logger.Error("Failed to initialize machine repository", infrastructure.Any("error", err))
 		os.Exit(1)

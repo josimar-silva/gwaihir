@@ -10,14 +10,14 @@ import (
 	"github.com/josimar-silva/gwaihir/internal/infrastructure"
 )
 
-// YAMLMachineRepository implements MachineRepository using configuration.
-type YAMLMachineRepository struct {
+// InMemoryMachineRepository implements MachineRepository using configuration.
+type InMemoryMachineRepository struct {
 	machines map[string]*domain.Machine
 	mu       sync.RWMutex
 }
 
-// NewYAMLMachineRepository creates a new machine repository from config.
-func NewYAMLMachineRepository(cfg *config.Config) (*YAMLMachineRepository, error) {
+// NewInMemoryMachineRepository creates a new machine repository from config.
+func NewInMemoryMachineRepository(cfg *config.Config) (*InMemoryMachineRepository, error) {
 	// Build and validate machines from config
 	machines := make(map[string]*domain.Machine)
 	for i := range cfg.Machines {
@@ -44,13 +44,13 @@ func NewYAMLMachineRepository(cfg *config.Config) (*YAMLMachineRepository, error
 		machines[machine.ID] = machine
 	}
 
-	return &YAMLMachineRepository{
+	return &InMemoryMachineRepository{
 		machines: machines,
 	}, nil
 }
 
 // GetByID retrieves a machine by its ID.
-func (r *YAMLMachineRepository) GetByID(id string) (*domain.Machine, error) {
+func (r *InMemoryMachineRepository) GetByID(id string) (*domain.Machine, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -63,7 +63,7 @@ func (r *YAMLMachineRepository) GetByID(id string) (*domain.Machine, error) {
 }
 
 // GetAll retrieves all registered machines.
-func (r *YAMLMachineRepository) GetAll() ([]*domain.Machine, error) {
+func (r *InMemoryMachineRepository) GetAll() ([]*domain.Machine, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -76,7 +76,7 @@ func (r *YAMLMachineRepository) GetAll() ([]*domain.Machine, error) {
 }
 
 // Exists checks if a machine with the given ID exists.
-func (r *YAMLMachineRepository) Exists(id string) bool {
+func (r *InMemoryMachineRepository) Exists(id string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

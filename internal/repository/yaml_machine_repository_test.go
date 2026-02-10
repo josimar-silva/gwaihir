@@ -8,8 +8,8 @@ import (
 	"github.com/josimar-silva/gwaihir/internal/config"
 )
 
-// Test 3.1.1: NewYAMLMachineRepository accepts config struct
-func TestNewYAMLMachineRepository_WithConfig(t *testing.T) {
+// Test 3.1.1: NewInMemoryMachineRepository accepts config struct
+func TestNewInMemoryMachineRepository_WithConfig(t *testing.T) {
 	// Arrange
 	cfg := &config.Config{
 		Machines: []config.MachineConfig{
@@ -29,11 +29,11 @@ func TestNewYAMLMachineRepository_WithConfig(t *testing.T) {
 	}
 
 	// Act
-	repo, err := NewYAMLMachineRepository(cfg)
+	repo, err := NewInMemoryMachineRepository(cfg)
 
 	// Assert
 	if err != nil {
-		t.Fatalf("NewYAMLMachineRepository() error = %v", err)
+		t.Fatalf("NewInMemoryMachineRepository() error = %v", err)
 	}
 
 	if repo == nil {
@@ -46,7 +46,7 @@ func TestNewYAMLMachineRepository_WithConfig(t *testing.T) {
 }
 
 // Test 3.1.2: Machines loaded from config.Machines array
-func TestNewYAMLMachineRepository_LoadsFromConfig(t *testing.T) {
+func TestNewInMemoryMachineRepository_LoadsFromConfig(t *testing.T) {
 	// Arrange
 	cfg := &config.Config{
 		Machines: []config.MachineConfig{
@@ -60,7 +60,7 @@ func TestNewYAMLMachineRepository_LoadsFromConfig(t *testing.T) {
 	}
 
 	// Act
-	repo, err := NewYAMLMachineRepository(cfg)
+	repo, err := NewInMemoryMachineRepository(cfg)
 
 	// Assert
 	if err != nil {
@@ -81,7 +81,7 @@ func TestNewYAMLMachineRepository_LoadsFromConfig(t *testing.T) {
 }
 
 // Test 3.1.3: Machines validated using domain.Machine
-func TestNewYAMLMachineRepository_ValidatesMachines(t *testing.T) {
+func TestNewInMemoryMachineRepository_ValidatesMachines(t *testing.T) {
 	// Arrange: config with invalid machine (bad MAC)
 	cfg := &config.Config{
 		Machines: []config.MachineConfig{
@@ -95,7 +95,7 @@ func TestNewYAMLMachineRepository_ValidatesMachines(t *testing.T) {
 	}
 
 	// Act
-	_, err := NewYAMLMachineRepository(cfg)
+	_, err := NewInMemoryMachineRepository(cfg)
 
 	// Assert
 	if err == nil {
@@ -104,7 +104,7 @@ func TestNewYAMLMachineRepository_ValidatesMachines(t *testing.T) {
 }
 
 // Test 3.1.4: Error handling for duplicate IDs
-func TestNewYAMLMachineRepository_DuplicateID(t *testing.T) {
+func TestNewInMemoryMachineRepository_DuplicateID(t *testing.T) {
 	// Arrange
 	cfg := &config.Config{
 		Machines: []config.MachineConfig{
@@ -124,7 +124,7 @@ func TestNewYAMLMachineRepository_DuplicateID(t *testing.T) {
 	}
 
 	// Act
-	_, err := NewYAMLMachineRepository(cfg)
+	_, err := NewInMemoryMachineRepository(cfg)
 
 	// Assert
 	if err == nil {
@@ -133,7 +133,7 @@ func TestNewYAMLMachineRepository_DuplicateID(t *testing.T) {
 }
 
 // Test 3.1.5: GetByID works with config machines
-func TestYAMLMachineRepository_GetByID(t *testing.T) {
+func TestInMemoryMachineRepository_GetByID(t *testing.T) {
 	// Arrange
 	cfg := &config.Config{
 		Machines: []config.MachineConfig{
@@ -146,7 +146,7 @@ func TestYAMLMachineRepository_GetByID(t *testing.T) {
 		},
 	}
 
-	repo, err := NewYAMLMachineRepository(cfg)
+	repo, err := NewInMemoryMachineRepository(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +185,7 @@ func TestYAMLMachineRepository_GetByID(t *testing.T) {
 }
 
 // Test 3.1.6: GetAll works with config machines
-func TestYAMLMachineRepository_GetAll(t *testing.T) {
+func TestInMemoryMachineRepository_GetAll(t *testing.T) {
 	// Arrange
 	cfg := &config.Config{
 		Machines: []config.MachineConfig{
@@ -204,7 +204,7 @@ func TestYAMLMachineRepository_GetAll(t *testing.T) {
 		},
 	}
 
-	repo, err := NewYAMLMachineRepository(cfg)
+	repo, err := NewInMemoryMachineRepository(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ func TestYAMLMachineRepository_GetAll(t *testing.T) {
 }
 
 // Test 3.1.7: Exists works with config machines
-func TestYAMLMachineRepository_Exists(t *testing.T) {
+func TestInMemoryMachineRepository_Exists(t *testing.T) {
 	// Arrange
 	cfg := &config.Config{
 		Machines: []config.MachineConfig{
@@ -236,7 +236,7 @@ func TestYAMLMachineRepository_Exists(t *testing.T) {
 		},
 	}
 
-	repo, err := NewYAMLMachineRepository(cfg)
+	repo, err := NewInMemoryMachineRepository(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,7 +272,7 @@ func TestYAMLMachineRepository_Exists(t *testing.T) {
 // ============================================================================
 
 // Test 3.2.1: Load example config file and create repository
-func TestYAMLMachineRepository_IntegrationWithExampleConfig(t *testing.T) {
+func TestInMemoryMachineRepository_IntegrationWithExampleConfig(t *testing.T) {
 	// Arrange
 	projectRoot := findProjectRoot(t)
 	exampleConfigPath := filepath.Join(projectRoot, "configs", "gwaihir.example.yaml")
@@ -283,7 +283,7 @@ func TestYAMLMachineRepository_IntegrationWithExampleConfig(t *testing.T) {
 		t.Fatalf("Failed to load example config: %v", err)
 	}
 
-	repo, err := NewYAMLMachineRepository(cfg)
+	repo, err := NewInMemoryMachineRepository(cfg)
 
 	// Assert
 	if err != nil {
@@ -306,7 +306,7 @@ func TestYAMLMachineRepository_IntegrationWithExampleConfig(t *testing.T) {
 }
 
 // Test 3.2.2: Verify all machines from example config are valid
-func TestYAMLMachineRepository_IntegrationExampleMachinesValid(t *testing.T) {
+func TestInMemoryMachineRepository_IntegrationExampleMachinesValid(t *testing.T) {
 	// Arrange
 	projectRoot := findProjectRoot(t)
 	exampleConfigPath := filepath.Join(projectRoot, "configs", "gwaihir.example.yaml")
@@ -317,7 +317,7 @@ func TestYAMLMachineRepository_IntegrationExampleMachinesValid(t *testing.T) {
 	}
 
 	// Act
-	repo, err := NewYAMLMachineRepository(cfg)
+	repo, err := NewInMemoryMachineRepository(cfg)
 
 	// Assert
 	if err != nil {
@@ -357,7 +357,7 @@ func TestYAMLMachineRepository_IntegrationExampleMachinesValid(t *testing.T) {
 }
 
 // Test 3.2.3: GetByID with example config machines
-func TestYAMLMachineRepository_IntegrationGetByIDWithExampleConfig(t *testing.T) {
+func TestInMemoryMachineRepository_IntegrationGetByIDWithExampleConfig(t *testing.T) {
 	// Arrange
 	projectRoot := findProjectRoot(t)
 	exampleConfigPath := filepath.Join(projectRoot, "configs", "gwaihir.example.yaml")
@@ -367,7 +367,7 @@ func TestYAMLMachineRepository_IntegrationGetByIDWithExampleConfig(t *testing.T)
 		t.Fatalf("Failed to load example config: %v", err)
 	}
 
-	repo, err := NewYAMLMachineRepository(cfg)
+	repo, err := NewInMemoryMachineRepository(cfg)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}
@@ -426,7 +426,7 @@ func TestYAMLMachineRepository_IntegrationGetByIDWithExampleConfig(t *testing.T)
 }
 
 // Test 3.2.4: GetAll with example config
-func TestYAMLMachineRepository_IntegrationGetAllWithExampleConfig(t *testing.T) {
+func TestInMemoryMachineRepository_IntegrationGetAllWithExampleConfig(t *testing.T) {
 	// Arrange
 	projectRoot := findProjectRoot(t)
 	exampleConfigPath := filepath.Join(projectRoot, "configs", "gwaihir.example.yaml")
@@ -436,7 +436,7 @@ func TestYAMLMachineRepository_IntegrationGetAllWithExampleConfig(t *testing.T) 
 		t.Fatalf("Failed to load example config: %v", err)
 	}
 
-	repo, err := NewYAMLMachineRepository(cfg)
+	repo, err := NewInMemoryMachineRepository(cfg)
 	if err != nil {
 		t.Fatalf("Failed to create repository: %v", err)
 	}

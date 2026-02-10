@@ -83,7 +83,7 @@ func startServer(t *testing.T, port string, configPath string) (string, func()) 
 		t.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	machineRepo, err := repository.NewYAMLMachineRepository(cfg)
+	machineRepo, err := repository.NewInMemoryMachineRepository(cfg)
 	if err != nil {
 		t.Fatalf("Failed to initialize machine repository: %v", err)
 	}
@@ -321,7 +321,7 @@ func TestIntegration_APIKeyAuthentication(t *testing.T) {
 		t.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	machineRepo, err := repository.NewYAMLMachineRepository(cfg)
+	machineRepo, err := repository.NewInMemoryMachineRepository(cfg)
 	if err != nil {
 		t.Fatalf("Failed to initialize machine repository: %v", err)
 	}
