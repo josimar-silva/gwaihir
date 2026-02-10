@@ -1,6 +1,11 @@
-# Integration Test Machine Configuration
-# This is test-specific data isolated from production config
-# Machines used only for integration testing
+server:
+  port: 8080
+  log:
+    format: json
+    level: info
+
+authentication:
+  api_key: "test-api-key"
 
 machines:
   - id: saruman
@@ -12,3 +17,10 @@ machines:
     name: "Test Machine - Morgoth"
     mac: "11:22:33:44:55:66"
     broadcast: "192.168.1.255"
+
+observability:
+  health_check:
+    enabled: true
+
+  metrics:
+    enabled: true

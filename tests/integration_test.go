@@ -24,16 +24,15 @@ import (
 	"github.com/josimar-silva/gwaihir/internal/usecase"
 )
 
-// getConfigPath returns the path to the machines.yaml config file for integration tests.
+// getConfigPath returns the path to the gwaihir.yaml config file for integration tests.
 // It checks (in order):
-// 1. tests/testdata/machines.yaml (test-specific config, preferred)
+// 1. tests/testdata/gwaihir.yaml (test-specific config, preferred)
 // 2. GWAIHIR_CONFIG environment variable (for CI/CD override)
-// 3. configs/machines.yaml (fallback to main config)
 func getConfigPath(t *testing.T) string {
 	projectRoot := findProjectRoot(t)
 
 	// Priority 1: Test-specific config in testdata
-	testConfigPath := filepath.Join(projectRoot, "tests", "testdata", "machines.yaml")
+	testConfigPath := filepath.Join(projectRoot, "tests", "testdata", "gwaihir.yaml")
 	if _, err := os.Stat(testConfigPath); err == nil {
 		return testConfigPath
 	}
@@ -43,13 +42,7 @@ func getConfigPath(t *testing.T) string {
 		return configPath
 	}
 
-	// Priority 3: Main config as fallback
-	mainConfigPath := filepath.Join(projectRoot, "configs", "machines.yaml")
-	if _, err := os.Stat(mainConfigPath); err == nil {
-		return mainConfigPath
-	}
-
-	t.Fatalf("Could not find machines.yaml. Checked:\n  - %s (test config)\n  - GWAIHIR_CONFIG env var\n  - %s (main config)", testConfigPath, mainConfigPath)
+	t.Fatalf("Could not find gwaihir.yaml. Checked:\n  - %s (test config)\n  - GWAIHIR_CONFIG env var", testConfigPath)
 	return ""
 }
 
