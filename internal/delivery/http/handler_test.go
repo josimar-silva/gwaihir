@@ -3,6 +3,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -101,6 +102,7 @@ func TestNewHandler(t *testing.T) {
 
 	if handler == nil {
 		t.Fatal("Expected non-nil handler")
+		return
 	}
 	if handler.version != "0.1.0" {
 		t.Errorf("Expected version 0.1.0, got %s", handler.version)
@@ -163,6 +165,7 @@ func TestHandler_Integration(t *testing.T) {
 	}
 	if machine == nil {
 		t.Fatal("Expected machine, got nil")
+		return
 	}
 	if machine.ID != "saruman" {
 		t.Errorf("Expected ID saruman, got %s", machine.ID)
@@ -209,7 +212,7 @@ func TestHTTP_Wake_Success(t *testing.T) {
 	reqBody := WakeRequest{MachineID: "saruman"}
 	body, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/wol", bytes.NewReader(body))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/wol", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -236,7 +239,7 @@ func TestHTTP_Wake_MachineNotFound(t *testing.T) {
 	reqBody := WakeRequest{MachineID: "nonexistent"}
 	body, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/wol", bytes.NewReader(body))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/wol", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -259,7 +262,7 @@ func TestHTTP_Wake_InvalidJSON(t *testing.T) {
 	handler, _, _ := newHandlerForTesting(nil)
 	router := NewRouter(handler)
 
-	req := httptest.NewRequest(http.MethodPost, "/wol", bytes.NewReader([]byte("invalid json")))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/wol", bytes.NewReader([]byte("invalid json")))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -277,7 +280,7 @@ func TestHTTP_Wake_MissingMachineID(t *testing.T) {
 	reqBody := WakeRequest{} // Empty machine_id
 	body, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/wol", bytes.NewReader(body))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/wol", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -292,7 +295,7 @@ func TestHTTP_ListMachines(t *testing.T) {
 	handler, _, _ := newHandlerForTesting(nil)
 	router := NewRouter(handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/machines", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/machines", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -315,7 +318,7 @@ func TestHTTP_ListMachines_Empty(t *testing.T) {
 	handler, _, _ := newHandlerForTesting(map[string]*domain.Machine{})
 	router := NewRouter(handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/machines", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/machines", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -337,7 +340,7 @@ func TestHTTP_GetMachine(t *testing.T) {
 	handler, _, _ := newHandlerForTesting(nil)
 	router := NewRouter(handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/machines/saruman", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/machines/saruman", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -363,7 +366,7 @@ func TestHTTP_GetMachine_NotFound(t *testing.T) {
 	handler, _, _ := newHandlerForTesting(nil)
 	router := NewRouter(handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/machines/nonexistent", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/machines/nonexistent", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -385,7 +388,7 @@ func TestHTTP_Health(t *testing.T) {
 	handler, _, _ := newHandlerForTesting(nil)
 	router := NewRouter(handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -408,7 +411,7 @@ func TestHTTP_Version(t *testing.T) {
 	handler, _, _ := newHandlerForTesting(nil)
 	router := NewRouter(handler)
 
-	req := httptest.NewRequest(http.MethodGet, "/version", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/version", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -444,7 +447,7 @@ func TestHTTP_WakeWithPacketError(t *testing.T) {
 	reqBody := WakeRequest{MachineID: "saruman"}
 	body, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest(http.MethodPost, "/wol", bytes.NewReader(body))
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/wol", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 

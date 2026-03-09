@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -20,7 +21,7 @@ func TestHealthCheckLive(t *testing.T) {
 	router.Use(RequestIDMiddleware())
 	router.GET("/live", healthHandler.HealthCheckLive)
 
-	req := httptest.NewRequest(http.MethodGet, "/live", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/live", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -48,7 +49,7 @@ func TestHealthCheckReady_Success(t *testing.T) {
 	router.Use(RequestIDMiddleware())
 	router.GET("/ready", healthHandler.HealthCheckReady)
 
-	req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/ready", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -76,7 +77,7 @@ func TestHealthCheckReady_NoMachines(t *testing.T) {
 	router.Use(RequestIDMiddleware())
 	router.GET("/ready", healthHandler.HealthCheckReady)
 
-	req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/ready", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -104,7 +105,7 @@ func TestHealthCheckFull_Success(t *testing.T) {
 	router.Use(RequestIDMiddleware())
 	router.GET("/health", healthHandler.HealthCheckFull)
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -160,7 +161,7 @@ func TestHealthCheckFull_NoMachines(t *testing.T) {
 	router.Use(RequestIDMiddleware())
 	router.GET("/health", healthHandler.HealthCheckFull)
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -204,7 +205,7 @@ func TestRouterHealthEndpoints(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, tc.path, nil)
 			w := httptest.NewRecorder()
 
 			router.ServeHTTP(w, req)

@@ -18,7 +18,7 @@ func TestRequestIDMiddleware(t *testing.T) {
 	}
 
 	// Create test request
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
 
 	c, _ := gin.CreateTestContext(w)
@@ -51,7 +51,7 @@ func TestRequestLoggingMiddleware(t *testing.T) {
 	}
 
 	// Create test request
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
 
 	c, _ := gin.CreateTestContext(w)
@@ -78,7 +78,7 @@ func TestRequestLoggingMiddleware(t *testing.T) {
 }
 
 func TestGetRequestID(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
 
 	c, _ := gin.CreateTestContext(w)
@@ -92,7 +92,7 @@ func TestGetRequestID(t *testing.T) {
 }
 
 func TestGetRequestIDMissing(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
 
 	c, _ := gin.CreateTestContext(w)
@@ -137,7 +137,7 @@ func TestMiddlewareChain(t *testing.T) {
 		c.JSON(http.StatusOK, gin.H{"request_id": id})
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -158,7 +158,7 @@ func TestRequestLoggingMiddlewareWithConfig_NilConfig(t *testing.T) {
 		t.Fatal("Expected non-nil middleware")
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
 
 	c, _ := gin.CreateTestContext(w)
@@ -187,7 +187,7 @@ func TestRequestLoggingMiddlewareWithConfig_WithConfig(t *testing.T) {
 		t.Fatal("Expected non-nil middleware")
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
 
 	c, _ := gin.CreateTestContext(w)
