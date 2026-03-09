@@ -282,6 +282,7 @@ func TestNewWoLPacketSender(t *testing.T) {
 	sender := NewWoLPacketSender()
 	if sender == nil {
 		t.Fatal("Expected non-nil sender")
+		return
 	}
 	if sender.dialFunc == nil {
 		t.Fatal("Expected dialFunc to be set")
@@ -296,6 +297,7 @@ func TestNewWoLPacketSenderWithDialer(t *testing.T) {
 	sender := NewWoLPacketSenderWithDialer(customDialer)
 	if sender == nil {
 		t.Fatal("Expected non-nil sender")
+		return
 	}
 	if sender.dialFunc == nil {
 		t.Fatal("Expected dialFunc to be set")

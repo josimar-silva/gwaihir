@@ -38,6 +38,7 @@ func TestNewInMemoryMachineRepository_WithConfig(t *testing.T) {
 
 	if repo == nil {
 		t.Fatal("Expected non-nil repository")
+		return
 	}
 
 	if len(repo.machines) != 2 {

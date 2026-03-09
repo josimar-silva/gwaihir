@@ -312,6 +312,7 @@ func TestGetMachine_Success(t *testing.T) {
 	}
 	if machine == nil {
 		t.Fatal("Expected machine, got nil")
+		return
 	}
 	if machine.ID != "saruman" {
 		t.Errorf("Expected ID saruman, got %s", machine.ID)
@@ -354,6 +355,7 @@ func TestNewWoLUseCase(t *testing.T) {
 
 	if useCase == nil {
 		t.Fatal("Expected non-nil usecase")
+		return
 	}
 	if useCase.machineRepo != repo {
 		t.Error("Expected machineRepo to be set")

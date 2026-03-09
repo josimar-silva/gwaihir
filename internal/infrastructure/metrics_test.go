@@ -17,6 +17,7 @@ func TestNewMetrics(t *testing.T) {
 
 	if metrics == nil {
 		t.Fatal("Expected non-nil metrics")
+		return
 	}
 
 	if metrics.WoLPacketsSent == nil {
