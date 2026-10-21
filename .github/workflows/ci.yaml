@@ -215,7 +215,7 @@ jobs:
           cache: true
 
       - name: 🔒 Run Gosec Security Scanner
-        uses: securego/gosec@14ef84f6feccf40be7f5092fd2db119bf3f5f836 # master
+        uses: securego/gosec@17ad2dd7533fd4c773d916e2bc81446917d593b5 # master
         with:
           args: '-no-fail -fmt sarif -out results.sarif ./...'
 
